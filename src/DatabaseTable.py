@@ -1,5 +1,6 @@
 import math
 import pandas as pd
+import src.utils as utils
 
 class DatabaseTable:
     TABLE = "TABLE_NOT_ADDED"
@@ -21,7 +22,7 @@ class DatabaseTable:
         primary_key = self.COLUMNS[0]
 
         for i, updated_row in updated_df.iterrows():
-            if math.isnan(updated_row[primary_key]):
+            if utils.isNone(updated_row[primary_key]):
                 self.save_row_added(updated_row, db)
             elif updated_row[primary_key] in self.db_data[primary_key].values:
                 self.save_row_changes(
@@ -37,6 +38,8 @@ class DatabaseTable:
     def generate_id(self) -> int:
         used_ids = set(self.db_data[self.COLUMNS[0]].values)
 
+        if len(used_ids) == 0:
+            return 1
         return max(used_ids)+1
 
         # id_ = 1
@@ -56,6 +59,8 @@ class DatabaseTable:
     def save_row_added(self, updated_row, db):
         id_ = self.generate_id()
         updated_row[self.COLUMNS[0]] = id_
+        print("ADDING ID ",id_, "to table", self.TABLE)
+        print("new_row:\n", updated_row)
         self.save_row_changes(
             self.get_db_row(id_),
             updated_row,
@@ -68,17 +73,7 @@ class DatabaseTable:
             return None
         return selected.iloc[0]
 
-    def get_empty_row_data(self, id_):
-        row_data = {
-            column: None for column in self.COLUMNS
-        }
-        row_data[self.COLUMNS[0]] = id_
-        return row_data
-
     def save_row_changes(self, original_row, updated_row, db):
-        # print("2 rows ------->>>> are ","EQUAL" if DatabaseTable.row_equals(original_row, updated_row) else "NOT EQUAL")
-        # print(original_row)
-        # print(updated_row)
         if not DatabaseTable.row_equals(original_row, updated_row):
             db.insert(self.TABLE, updated_row)
 

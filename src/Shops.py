@@ -1,6 +1,7 @@
 import pandas as pd
 from src.DatabaseTable import DatabaseTable
 import math
+import src.utils as utils
 
 class Shops(DatabaseTable):
     TABLE = "Shops"
@@ -12,21 +13,17 @@ class Shops(DatabaseTable):
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
 
-    def list_shops(self) -> list[str]:
-        shops = []
-        for shop_id in self.db_data:
-            shops.append(self.get_shop_string(shop_id))
-
-        return sorted(shops)
-
-    def get_shop_string(self, shop_id) -> str:
-        if shop_id is None or (isinstance(shop_id, float) and math.isnan(shop_id)):
-            return "Unknown"
+    def get_shop_string(self, shop_id, location=True) -> str:
+        if utils.isNone(shop_id):
+            return ""
 
         shop = self.db_data[self.db_data["shop_id"] == shop_id].iloc[0]
 
         output = shop["brand"]
-        if shop["location"] is not None:
+        if output is None:
+            return ""
+
+        if location and (shop["location"] is not None):
             output += " - "+shop["location"]
 
         return output
@@ -36,16 +33,19 @@ class Shops(DatabaseTable):
             return None
 
         for shop_id in self.db_data["shop_id"]:
-            if self.get_shop_string(shop_id) == shop_string:
+            if (
+                self.get_shop_string(shop_id, True) == shop_string
+                or self.get_shop_string(shop_id, False) == shop_string
+            ):
                 return shop_id
 
         return None
     
-    def get_all_shops(self):
-        return [
-            self.get_shop_string(id_)
+    def get_all_shops(self, location=True):
+        return sorted(list(set([
+            self.get_shop_string(id_, location)
             for id_ in self.db_data["shop_id"]
-        ]
+        ])))
 
     def to_display_df(self):
         df = self.db_data.rename({

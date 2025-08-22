@@ -48,7 +48,12 @@ if __name__ == "__main__":
                 column_config={
                     "ID": st.column_config.NumberColumn(disabled=True),
                     "Price": st.column_config.NumberColumn(format="£%.2f"),
-                    "Shop": st.column_config.SelectboxColumn(options=shops.get_all_shops())
+                    "Shop": st.column_config.SelectboxColumn(
+                        options=shops.get_all_shops(False)
+                    ),
+                    "Category": st.column_config.SelectboxColumn(
+                        options=categories.list_category_strings()
+                    )
                 },
                 hide_index=True,
                 num_rows="dynamic"
@@ -64,14 +69,28 @@ if __name__ == "__main__":
                 shops_df,
                 column_config={
                     "ID": st.column_config.NumberColumn(disabled=True),
-                    "Brand": st.column_config.Column(required=True)
                 },
                 hide_index=True,
-                num_rows="dynamic")
+                num_rows="dynamic"
+            )
             shops.save_changes(shops.from_display_df(shops_edited), db)
 
         with st.expander("Categories"):
-            pass
+            categories_df = categories.to_display_df()
+            categories_edited = st.data_editor(
+                categories_df,
+                column_config={
+                    "ID": st.column_config.NumberColumn(disabled=True),
+                    "Importance": st.column_config.NumberColumn(),
+                    "Parent Category": st.column_config.SelectboxColumn(
+                        options=categories.list_category_names()
+                    ),
+                },
+                hide_index=True,
+                num_rows="dynamic"
+            )
+            categories.save_changes(categories.from_display_df(categories_edited), db)
+
 
     double_run()
 

@@ -18,22 +18,22 @@ class Database:
         :return:
         """
 
-        print(f"""
+        sql_statement = f"""
             INSERT INTO {table} ("{'", "'.join(data.keys())}")
             VALUES ({', '.join(map(self.stringify, data.values))})
-            ON CONFLICT ({data.keys()[0]})
-            DO UPDATE SET {Database.string_set(data)}
-            WHERE {data.keys()[0]}={data.values[0]}
-            """)
+            """
+        set_statement = Database.string_set(data)
+        if set_statement != "":
+            sql_statement+= f"""
+                ON CONFLICT ({data.keys()[0]})
+                DO UPDATE SET {Database.string_set(data)}
+                WHERE {data.keys()[0]}={data.values[0]}
+                """
+
+        print(sql_statement)
 
         self.cursor.execute(
-            f"""
-            INSERT INTO {table} ("{'", "'.join(data.keys())}")
-            VALUES ({', '.join(map(self.stringify, data.values))})
-            ON CONFLICT ({data.keys()[0]})
-            DO UPDATE SET {Database.string_set(data)}
-            WHERE {data.keys()[0]}={data.values[0]}
-            """
+            sql_statement
         )
         self.connection.commit()
 

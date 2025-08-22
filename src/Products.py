@@ -21,7 +21,7 @@ class Products(DatabaseTable):
         }, axis=1
         )
         df["Category"] = df["category_id"].apply(categories.get_category_string)
-        df["Shop"] = df["shop_id"].apply(shops.get_shop_string)
+        df["Shop"] = df["shop_id"].apply(lambda id_: shops.get_shop_string(id_, False))
 
         return df[["ID", "Name", "Price", "Shop", "Category"]]
 
@@ -32,7 +32,7 @@ class Products(DatabaseTable):
             "Price": "price"
         }, axis=1)
 
-        renamed_df["category_id"] = renamed_df["Category"].apply(categories.get_category_id)
+        renamed_df["category_id"] = renamed_df["Category"].apply(categories.get_category_id_from_string)
         renamed_df["shop_id"] = renamed_df["Shop"].apply(shops.get_shop_id)
-        
+
         return renamed_df[["product_id", "name", "price", "shop_id", "category_id"]]
