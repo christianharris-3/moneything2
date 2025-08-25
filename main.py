@@ -36,7 +36,7 @@ if __name__ == "__main__":
                         "ID": st.column_config.NumberColumn(disabled=True),
                         "Price": st.column_config.NumberColumn(format="£%.2f"),
                         "Shop": st.column_config.SelectboxColumn(
-                            options=db_manager.get_all_shops()
+                            options=db_manager.get_all_shop_brands()
                         ),
                         "Category": st.column_config.SelectboxColumn(
                             options=db_manager.get_all_category_strings()
@@ -69,6 +69,21 @@ if __name__ == "__main__":
                         "Parent Category": st.column_config.SelectboxColumn(
                             options=db_manager.get_all_categories()
                         ),
+                    },
+                    hide_index=True,
+                    num_rows="dynamic"
+                )
+            )
+
+        with st.expander("ShopLocations"):
+            db_manager.save_locations_df_changes(
+                st.data_editor(
+                    db_manager.get_locations_display_df(),
+                    column_config={
+                        "ID": st.column_config.NumberColumn(disabled=True),
+                        "Brand": st.column_config.SelectboxColumn(
+                            options=db_manager.get_all_shop_brands()
+                        )
                     },
                     hide_index=True,
                     num_rows="dynamic"

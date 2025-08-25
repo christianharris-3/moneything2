@@ -12,20 +12,6 @@ class Shops(DatabaseTable):
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
 
-
-    def get_shop_id_from_name_dict(self):
-        id_name_dict = {}
-        for i, row in self.db_data.iterrows():
-            id_name_dict[row["name"]] = row["shop_id"]
-        return id_name_dict
-
-    def get_shop_id_to_name_dict(self):
-        id_name_dict = {}
-        for i, row in self.db_data.iterrows():
-            id_name_dict[row["shop_id"]] = row["brand"]
-        print(id_name_dict)
-        return id_name_dict
-
     def get_all_shops(self) -> list[str]:
         return sorted(list(set([
             self.get_db_row(id_)["brand"]

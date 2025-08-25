@@ -78,9 +78,6 @@ class DatabaseTable:
 
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):
-            print("DOING DB INSERT DUE TO DIFFERENT ROWS:")
-            print(original_row)
-            print(updated_row)
             db.insert(self.TABLE, updated_row)
 
     @staticmethod

@@ -96,11 +96,11 @@ class SQLDatabase:
         )
         return Categories(categories)
 
-    def load_locations(self):
+    def load_locations(self, shops):
         locations = self.cursor.execute(
             "SELECT * FROM ShopLocations"
         )
-        return ShopLocations(locations)
+        return ShopLocations(locations, shops)
 
     def create_tables(self):
         self.cursor.execute(

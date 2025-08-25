@@ -11,9 +11,6 @@ class Products(DatabaseTable):
          "shop_id",
          "category_id"
     ]
-    DTYPES = [
-
-    ]
     def __init__(self, select_call, shops, categories):
         super().__init__(select_call, self.COLUMNS)
         self.db_data = self.update_foreign_data(
