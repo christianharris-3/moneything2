@@ -12,10 +12,29 @@ class Categories(DatabaseTable):
     ]
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
+        self.db_data = self.update_foreign_data(self.db_data)
 
-    def get_category_string(self, category_id) -> str:
+    def update_foreign_data(self, db_data):
+        db_data["category_string"] = db_data["category_id"].apply(
+            self.get_category_string
+        )
+        db_data["parent_name"] = db_data.merge(
+            db_data,
+            left_on="parent_category",
+            right_on="category_id",
+            how="left"
+        )["name_y"]
+        return db_data
+
+    def get_category_string(self, category_id, checked_ids=None) -> str:
         if utils.isNone(category_id):
             return ""
+        if checked_ids is None:
+            checked_ids = {category_id}
+        elif category_id in checked_ids:
+            return ""
+        else:
+            checked_ids.add(category_id)
 
         db_row = self.get_db_row(category_id)
         if db_row is None:
@@ -25,69 +44,51 @@ class Categories(DatabaseTable):
             return ""
         if db_row["parent_category"] is not None:
             parent_string = self.get_category_string(
-                db_row["parent_category"]
+                db_row["parent_category"],
+                checked_ids
             )
             if parent_string != "":
                 output += "-"+parent_string
         return output
 
-    def get_category_id_from_string(self, category_string):
-        if category_string is None or category_string == "":
-            return None
-
-        for category_id in self.db_data["category_id"]:
-            if self.get_category_string(category_id) == category_string:
-                return category_id
-
-        return None
-
-    def get_category_name(self, category_id):
-        row = self.get_db_row(category_id)
-        if row is not None:
-            return row["name"]
-        return ""
-
-    def get_category_id_from_name(self, category_name):
-        if category_name is None:
-            return None
-        for i,row in self.db_data.iterrows():
-            if row["name"] == category_name:
-                return row["category_id"]
-
-        return None
-
     def list_category_strings(self):
-        category_strings = set()
-        for id_ in self.db_data["category_id"]:
-            category_strings.add(self.get_category_string(id_))
-        return sorted(list(category_strings))
+        return sorted(filter(
+            lambda name: not utils.isNone(name),
+            set(self.db_data["category_string"])
+        ))
 
     def list_category_names(self):
-        return sorted(list(set(
-            name for name in self.db_data["name"] if not utils.isNone(name)
-        )))
+        return sorted(filter(
+            lambda name: not utils.isNone(name),
+            set(self.db_data["name"])
+        ))
 
     def to_display_df(self):
         df = self.db_data.rename({
             "category_id": "ID",
             "name": "Name",
-            "importance": "Importance"
+            "importance": "Importance",
+            "parent_name": "Parent Category"
         }, axis=1)
 
-        df["Parent Category"] = self.db_data["parent_category"].apply(
-            self.get_category_name
-        )
-        print(df)
         return df[["ID", "Name", "Importance", "Parent Category"]]
 
     def from_display_df(self, display_df):
         renamed_df = display_df.rename({
             "ID": "category_id",
             "Name": "name",
-            "Importance": "importance"
+            "Importance": "importance",
+            "Parent Category": "parent_name"
         }, axis=1)
 
-        renamed_df["parent_category"] = display_df["Parent Category"].apply(self.get_category_id_from_name)
+        renamed_df["parent_category"] = renamed_df.merge(
+            renamed_df,
+            left_on="parent_name",
+            right_on="name",
+            how="left"
+        )["category_id_y"]
 
-        return renamed_df[["category_id", "name", "importance", "parent_category"]]
+        return self.update_foreign_data(
+            renamed_df[["category_id", "name", "importance", "parent_category"]]
+        )
 

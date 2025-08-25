@@ -7,43 +7,28 @@ class Shops(DatabaseTable):
     TABLE = "Shops"
     COLUMNS = [
         "shop_id",
-        "brand",
-        "location"
+        "brand"
     ]
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
 
-    def get_shop_string(self, shop_id, location=True) -> str:
-        if utils.isNone(shop_id):
-            return ""
 
-        shop = self.db_data[self.db_data["shop_id"] == shop_id].iloc[0]
+    def get_shop_id_from_name_dict(self):
+        id_name_dict = {}
+        for i, row in self.db_data.iterrows():
+            id_name_dict[row["name"]] = row["shop_id"]
+        return id_name_dict
 
-        output = shop["brand"]
-        if output is None:
-            return ""
+    def get_shop_id_to_name_dict(self):
+        id_name_dict = {}
+        for i, row in self.db_data.iterrows():
+            id_name_dict[row["shop_id"]] = row["brand"]
+        print(id_name_dict)
+        return id_name_dict
 
-        if location and (shop["location"] is not None):
-            output += " - "+shop["location"]
-
-        return output
-    
-    def get_shop_id(self, shop_string):
-        if shop_string is None or shop_string == "":
-            return None
-
-        for shop_id in self.db_data["shop_id"]:
-            if (
-                self.get_shop_string(shop_id, True) == shop_string
-                or self.get_shop_string(shop_id, False) == shop_string
-            ):
-                return shop_id
-
-        return None
-    
-    def get_all_shops(self, location=True):
+    def get_all_shops(self) -> list[str]:
         return sorted(list(set([
-            self.get_shop_string(id_, location)
+            self.get_db_row(id_)["brand"]
             for id_ in self.db_data["shop_id"]
         ])))
 

@@ -13,25 +13,28 @@ class DatabaseTable:
                 new_row[columns[i]] = db_row[i]
             data.append(new_row)
 
-        self.db_data = pd.DataFrame(
-            data,
-            columns=self.COLUMNS,
+        self.db_data = utils.force_int_ids(
+            pd.DataFrame(
+                data,
+                columns=self.COLUMNS,
+            )
         )
 
     def save_changes(self, updated_df, db):
+        updated_df = updated_df[self.COLUMNS]
         primary_key = self.COLUMNS[0]
 
         for i, updated_row in updated_df.iterrows():
             if utils.isNone(updated_row[primary_key]):
                 self.save_row_added(updated_row, db)
-            elif updated_row[primary_key] in self.db_data[primary_key].values:
+            elif updated_row[primary_key] in self.db_data[self.COLUMNS][primary_key].values:
                 self.save_row_changes(
-                    self.get_db_row(updated_row[primary_key]),
+                    self.get_db_row(updated_row[primary_key])[self.COLUMNS],
                     updated_row,
                     db
                 )
 
-        for i, original_row in self.db_data.iterrows():
+        for i, original_row in self.db_data[self.COLUMNS].iterrows():
             if original_row[primary_key] not in updated_df[primary_key].values:
                 self.save_row_remove(original_row[primary_key], db)
 
@@ -75,6 +78,9 @@ class DatabaseTable:
 
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):
+            print("DOING DB INSERT DUE TO DIFFERENT ROWS:")
+            print(original_row)
+            print(updated_row)
             db.insert(self.TABLE, updated_row)
 
     @staticmethod
