@@ -19,19 +19,18 @@ def force_int_ids(df):
                 df[column] = df[column].astype(float)
     return df
 
-def data_editor(df, column_config, aggrid=False):
+def data_editor(df, column_config=None, aggrid=False):
+    if column_config is None:
+        column_config = {}
     if aggrid:
         return aggrid_data_editor(df, column_config)
     else:
         return streamlit_data_editor(df, column_config)
 
-def aggrid_data_editor(df, column_config: dict[str, dict] = None):
+def aggrid_data_editor(df, column_config: dict[str, dict]):
     grid_options = GridOptionsBuilder.from_dataframe(df)
     grid_options.configure_selection("multiple", use_checkbox=True)
     grid_options.configure_auto_height(True)
-
-    if column_config is None:
-        column_config = {}
 
     for column_title in df.columns:
         if column_title not in column_config.keys():

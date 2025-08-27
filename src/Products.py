@@ -35,10 +35,19 @@ class Products(DatabaseTable):
 
     def list_products_from_shop(self, shop_name):
         return sorted([
-            f"{row['name']} - £{row['price']:.2f}"
+            self.get_product_string(row)
             for i, row in self.db_data.iterrows()
-            if row["shop_name"] == shop_name and not utils.isNone(row["name"])
+            if (row["shop_name"] == shop_name or utils.isNone(row["shop_name"])) and not utils.isNone(row["name"])
         ])
+
+    def get_product_string(self, row):
+        return f"{row['name']} - £{row['price']:.2f}"
+
+    def get_product_id_from_product_string(self, string):
+        for i, row in self.db_data.iterrows():
+            if self.get_product_string(row) == string:
+                return row["product_id"]
+        return None
 
     def to_display_df(self, shops, categories):
         df = self.db_data.rename({

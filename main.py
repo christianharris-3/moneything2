@@ -1,5 +1,6 @@
 import streamlit as st
 from src.db_manager import DatabaseManager
+from src.adding_spending import AddingSpending
 import src.utils as utils
 
 from st_aggrid import AgGrid, GridOptionsBuilder
@@ -21,22 +22,39 @@ if __name__ == "__main__":
     input_tab, data_base, data_tab = st.tabs(["Input Spending", "DataBase", "View Data"])
     with input_tab:
 
-        with st.expander("Add Spending"):
-            shop_brand = st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True)
+        adding_spending = AddingSpending(st.session_state, db_manager)
 
-            selected_shop_locations = db_manager.get_shop_locations(shop_brand)
-            if selected_shop_locations != []:
-                shop_location = st.selectbox("Location Name", selected_shop_locations, accept_new_options=True)
+        adding_spending.set_shop_brand(
+            st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True)
+        )
+        selected_shop_locations = db_manager.get_shop_locations(adding_spending.shop_brand)
+        if selected_shop_locations != []:
+            adding_spending.set_shop_location(
+                st.selectbox("Location Name", selected_shop_locations, accept_new_options=True)
+            )
+        adding_spending.set_spending_date(
+            st.date_input("Spending Date", format="DD/MM/YYYY")
+        )
+        adding_spending.set_spending_time(
+            st.time_input("Spending Time", value=None)
+        )
 
-            spending_date = st.date_input("Spending Date")
+        st.markdown("## Items")
 
-            st.markdown("## Items")
+        selected_product = st.selectbox(
+            "Add Item",
+            db_manager.get_all_products(adding_spending.shop_brand),
+            accept_new_options=True
+        )
 
-            item_name = st.selectbox("Add Item", db_manager.get_all_products(shop_brand), accept_new_options=True)
+        if st.button("Add"):
+            adding_spending.add_product(selected_product)
 
-            # with st.button("Add"):
-                # if item_name
-                # add_item(item_name)
+        st.session_state["adding_spending_df"] = adding_spending.from_display_df(
+            utils.data_editor(
+                adding_spending.to_display_df(),
+            )
+        )
 
 
     with data_base:
