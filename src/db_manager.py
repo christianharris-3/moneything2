@@ -10,6 +10,8 @@ class DatabaseManager:
         self.shop_locations = self.db.load_locations(self.shops)
         self.categories = self.db.load_categories()
         self.products = self.db.load_products(self.shops, self.categories)
+        self.spending_events = self.db.load_spending_events(self.shops, self.shop_locations)
+        self.spending_items = self.db.load_spending_items(self.products)
 
     def get_products_display_df(self):
         return self.products.to_display_df(self.shops, self.categories)
@@ -52,4 +54,20 @@ class DatabaseManager:
         )
     def get_shop_locations(self, shop_brand):
         return self.shop_locations.get_shop_locations(shop_brand)
+
+    def get_spending_events_display_df(self):
+        return self.spending_events.to_display_df()
+    def save_spending_events_df_changes(self, edited_df):
+        self.spending_events.save_changes(
+            self.spending_events.from_display_df(edited_df, self.shops, self.shop_locations),
+            self.db
+        )
+
+    def get_spending_items_display_df(self):
+        return self.spending_items.to_display_df()
+    def save_spending_items_df_changes(self, edited_df):
+        self.spending_items.save_changes(
+            self.spending_items.from_display_df(edited_df, self.products),
+            self.db
+        )
 

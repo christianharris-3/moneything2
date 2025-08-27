@@ -82,6 +82,17 @@ if __name__ == "__main__":
                 )
             )
 
+        with st.expander("ShopLocations"):
+            db_manager.save_locations_df_changes(
+                utils.data_editor(
+                    db_manager.get_locations_display_df(),
+                    {
+                        "ID": {"type": "number", "editable": False},
+                        "Brand": {"type": "select", "options": db_manager.get_all_shop_brands()}
+                    },
+                )
+            )
+
         with st.expander("Categories"):
             db_manager.save_categories_df_changes(
                 utils.data_editor(
@@ -94,13 +105,28 @@ if __name__ == "__main__":
                 )
             )
 
-        with st.expander("ShopLocations"):
-            db_manager.save_locations_df_changes(
+        with st.expander("Spending Events"):
+            db_manager.save_spending_events_df_changes(
                 utils.data_editor(
-                    db_manager.get_locations_display_df(),
+                    db_manager.get_spending_events_display_df(),
                     {
                         "ID": {"type": "number", "editable": False},
-                        "Brand": {"type": "select", "options": db_manager.get_all_shop_brands()}
+                        "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
+                        "Location": {"type": "select", "options": db_manager.get_shop_locations(None)}
+                    },
+                )
+            )
+
+        with st.expander("Spending Items"):
+            db_manager.save_spending_items_df_changes(
+                utils.data_editor(
+                    db_manager.get_spending_items_display_df(),
+                    {
+                        "ID": {"type": "number", "editable": False},
+                        "Event ID": {"type": "select", "options": db_manager.spending_events.list_all_in_column("spending_event_id")},
+                        "Name": {"type": "select", "options": db_manager.get_all_products(None)},
+                        "Price": {"type": "number", "format": "£:.2f"},
+                        "Num Purchased": {"type": "number"}
                     },
                 )
             )

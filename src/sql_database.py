@@ -3,6 +3,8 @@ from src.Categories import Categories
 from src.Products import Products
 from src.Shops import Shops
 from src.ShopLocations import ShopLocations
+from src.SpendingItems import SpendingItems
+from src.SpendingEvents import SpendingEvents
 import math
 
 class SQLDatabase:
@@ -102,6 +104,19 @@ class SQLDatabase:
         )
         return ShopLocations(locations, shops)
 
+    def load_spending_events(self, shops, shop_locations):
+        spending_events = self.cursor.execute(
+            "SELECT * FROM SpendingEvents"
+        )
+        return SpendingEvents(spending_events, shops, shop_locations)
+
+    def load_spending_items(self, products):
+        spending_items = self.cursor.execute(
+            "SELECT * FROM SpendingItems"
+        )
+        return SpendingItems(spending_items, products)
+
+
     def create_tables(self):
         self.cursor.execute(
             """
@@ -141,17 +156,27 @@ class SQLDatabase:
             );
             """
         )
-
-        # self.cursor.execute(
-        #     """
-        #     INSERT INTO Products (name, price, shop_id)
-        #                 VALUES ("Apples", 1.29, 1)
-        #     """
-        # )
-        # self.cursor.execute(
-        #     """
-        #     INSERT INTO Shops (brand, location)
-        #                 VALUES ("Lidl", "Oxford Road")
-        #     """
-        # )
-        # self.connection.commit()
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS SpendingEvents(
+                spending_event_id INTEGER PRIMARY KEY,
+                date TEXT,
+                time TEXT,
+                shop_id INTEGER,
+                shop_location_id INTEGER
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS SpendingItems(
+                spending_item_id INTEGER PRIMARY KEY,
+                spending_event_id INTEGER,
+                product_id INTEGER,
+                override_price DECIMAL,
+                parent_price DECIMAL,
+                num_purchased INTEGER
+            );
+            """
+        )
+        self.connection.commit()
