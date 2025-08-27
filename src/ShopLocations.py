@@ -21,6 +21,9 @@ class ShopLocations(DatabaseTable):
         )["brand"]
         return db_data
 
+    def get_shop_locations(self, shop_brand):
+        return sorted(set(self.db_data[self.db_data["brand"] == shop_brand]["shop_location"]))
+
     def to_display_df(self):
         df = self.db_data.rename({
             "shop_location_id": "ID",

@@ -13,10 +13,13 @@ class Shops(DatabaseTable):
         super().__init__(select_call, self.COLUMNS)
 
     def get_all_shops(self) -> list[str]:
-        return sorted(list(set([
-            self.get_db_row(id_)["brand"]
-            for id_ in self.db_data["shop_id"]
-        ])))
+        return sorted(filter(
+            lambda val: not utils.isNone(val),
+            set([
+                self.get_db_row(id_)["brand"]
+                for id_ in self.db_data["shop_id"]
+            ])
+        ))
 
     def to_display_df(self):
         df = self.db_data.rename({

@@ -51,18 +51,6 @@ class Categories(DatabaseTable):
                 output += "-"+parent_string
         return output
 
-    def list_category_strings(self):
-        return sorted(filter(
-            lambda name: not utils.isNone(name),
-            set(self.db_data["category_string"])
-        ))
-
-    def list_category_names(self):
-        return sorted(filter(
-            lambda name: not utils.isNone(name),
-            set(self.db_data["name"])
-        ))
-
     def to_display_df(self):
         df = self.db_data.rename({
             "category_id": "ID",

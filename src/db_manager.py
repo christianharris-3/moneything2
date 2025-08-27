@@ -18,6 +18,9 @@ class DatabaseManager:
             self.products.from_display_df(edited_df, self.shops, self.categories),
             self.db
         )
+    def get_all_products(self, shop):
+        return self.products.list_products_from_shop(shop)
+
     def get_shops_display_df(self):
         return self.shops.to_display_df()
     def save_shops_df_changes(self, edited_df):
@@ -36,9 +39,9 @@ class DatabaseManager:
             self.db
         )
     def get_all_category_strings(self):
-        return self.categories.list_category_strings()
+        return self.categories.list_all_in_column("category_string")
     def get_all_categories(self):
-        return self.categories.list_category_names()
+        return self.categories.list_all_in_column("name")
 
     def get_locations_display_df(self):
         return self.shop_locations.to_display_df()
@@ -47,4 +50,6 @@ class DatabaseManager:
             self.shop_locations.from_display_df(edited_df, self.shops),
             self.db
         )
+    def get_shop_locations(self, shop_brand):
+        return self.shop_locations.get_shop_locations(shop_brand)
 

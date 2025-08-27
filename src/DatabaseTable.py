@@ -80,6 +80,12 @@ class DatabaseTable:
         if not DatabaseTable.row_equals(original_row, updated_row):
             db.insert(self.TABLE, updated_row)
 
+    def list_all_in_column(self, column):
+        return sorted(filter(
+            lambda name: not utils.isNone(name),
+            set(self.db_data[column])
+        ))
+
     @staticmethod
     def row_equals(row1, row2) -> bool:
         if not isinstance(row1, pd.Series) or not isinstance(row2, pd.Series):

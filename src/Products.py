@@ -33,6 +33,13 @@ class Products(DatabaseTable):
 
         return utils.force_int_ids(db_data)
 
+    def list_products_from_shop(self, shop_name):
+        return sorted([
+            f"{row['name']} - £{row['price']:.2f}"
+            for i, row in self.db_data.iterrows()
+            if row["shop_name"] == shop_name and not utils.isNone(row["name"])
+        ])
+
     def to_display_df(self, shops, categories):
         df = self.db_data.rename({
             "product_id": "ID",
