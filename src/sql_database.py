@@ -104,11 +104,11 @@ class SQLDatabase:
         )
         return ShopLocations(locations, shops)
 
-    def load_spending_events(self, shops, shop_locations):
+    def load_spending_events(self, shops, shop_locations, categories):
         spending_events = self.cursor.execute(
             "SELECT * FROM SpendingEvents"
         )
-        return SpendingEvents(spending_events, shops, shop_locations)
+        return SpendingEvents(spending_events, shops, shop_locations, categories)
 
     def load_spending_items(self, products):
         spending_items = self.cursor.execute(
@@ -163,7 +163,8 @@ class SQLDatabase:
                 date TEXT,
                 time TEXT,
                 shop_id INTEGER,
-                shop_location_id INTEGER
+                shop_location_id INTEGER,
+                category_id INTEGER
             );
             """
         )

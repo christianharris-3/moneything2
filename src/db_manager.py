@@ -12,7 +12,8 @@ class DatabaseManager:
         self.shop_locations = self.db.load_locations(self.shops)
         self.categories = self.db.load_categories()
         self.products = self.db.load_products(self.shops, self.categories)
-        self.spending_events = self.db.load_spending_events(self.shops, self.shop_locations)
+        self.spending_events = self.db.load_spending_events(
+            self.shops, self.shop_locations, self.categories)
         self.spending_items = self.db.load_spending_items(self.products)
 
     def get_products_display_df(self):
@@ -61,7 +62,7 @@ class DatabaseManager:
         return self.spending_events.to_display_df()
     def save_spending_events_df_changes(self, edited_df):
         self.spending_events.save_changes(
-            self.spending_events.from_display_df(edited_df, self.shops, self.shop_locations),
+            self.spending_events.from_display_df(edited_df, self.shops, self.shop_locations, self.categories),
             self.db
         )
 

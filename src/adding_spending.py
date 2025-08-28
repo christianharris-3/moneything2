@@ -24,6 +24,7 @@ class AddingSpending:
         self.spending_date = None
         self.shop_brand = None
         self.shop_location = None
+        self.spending_category = None
 
     def set_spending_time(self, spending_time):
         if spending_time is not None:
@@ -37,7 +38,8 @@ class AddingSpending:
         self.shop_brand = shop_brand
     def set_shop_location(self, shop_location):
         self.shop_location = shop_location
-
+    def set_spending_category(self, spending_category):
+        self.spending_category = spending_category
 
     def add_product(self, product_string):
         product_id = self.db_manager.products.get_product_id_from_product_string(product_string)

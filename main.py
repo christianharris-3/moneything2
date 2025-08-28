@@ -32,6 +32,10 @@ if __name__ == "__main__":
             adding_spending.set_shop_location(
                 st.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
             )
+
+        adding_spending.set_spending_category(
+            st.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
+        )
         adding_spending.set_spending_date(
             st.date_input("Spending Date", format="DD/MM/YYYY")
         )
