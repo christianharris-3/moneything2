@@ -1,5 +1,8 @@
 import pandas as pd
 import math
+
+import streamlit as st
+
 import src.utils as utils
 
 class AddingSpending:
@@ -52,6 +55,7 @@ class AddingSpending:
                 "override_price": None,
                 "num_purchased": 1
             }
+        st.session_state["adding_spending_df"] = self.spending_df
 
     def to_display_df(self):
         df = self.spending_df.merge(
@@ -103,8 +107,6 @@ class AddingSpending:
         return renamed_df[["parent_product_id", "new_item_name", "override_price", "num_purchased"]]
 
     def add_spending_to_db(self):
-        print("STORING")
-        print(self.spending_df)
 
         spending_event_id = self.db_manager.spending_events.generate_id()
         shop_id = self.db_manager.shops.db_data[
@@ -142,7 +144,8 @@ class AddingSpending:
                 "product_id": product_id,
                 "name": row["new_item_name"],
                 "price": row["override_price"],
-                "shop_id": shop_id
+                "shop_id": shop_id,
+                "category_id": None,
             }]).iloc[0]
             self.db_manager.products.db_data.loc[
                 len(self.db_manager.products.db_data)

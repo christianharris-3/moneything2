@@ -18,7 +18,7 @@ class Products(DatabaseTable):
         )
 
     def update_foreign_data(self, db_data, shops, categories):
-        db_data["category_string"] = db_data.merge(
+        db_data["category_string"] = db_data[["category_id"]].merge(
             categories.db_data,
             left_on="category_id",
             right_on="category_id",
@@ -50,7 +50,9 @@ class Products(DatabaseTable):
         return None
 
     def to_display_df(self, shops, categories):
-        df = self.db_data.rename({
+        df = self.update_foreign_data(
+            self.db_data, shops, categories
+        ).rename({
             "product_id": "ID",
             "name": "Name",
             "price": "Price",
@@ -58,7 +60,6 @@ class Products(DatabaseTable):
             "shop_name": "Shop",
         }, axis=1
         )
-
         return df[["ID", "Name", "Price", "Shop", "Category"]]
 
     def from_display_df(self, display_df, shops, categories):

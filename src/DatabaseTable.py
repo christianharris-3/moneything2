@@ -84,6 +84,18 @@ class DatabaseTable:
             set(self.db_data[column])
         ))
 
+
+    @staticmethod
+    def df_equals(df1, df2) -> bool:
+        if not isinstance(df1, pd.DataFrame) or not isinstance(df2, pd.DataFrame):
+            return False
+        if len(df1) != len(df2):
+            return False
+        for i, row in df1.iterrows():
+            if not DatabaseTable.row_equals(row, df2.iloc[i]):
+                return False
+        return True
+
     @staticmethod
     def row_equals(row1, row2) -> bool:
         if not isinstance(row1, pd.Series) or not isinstance(row2, pd.Series):

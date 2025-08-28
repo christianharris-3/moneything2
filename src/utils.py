@@ -15,7 +15,7 @@ def force_int_ids(df):
         if column.endswith("_id"):
             try:
                 df[column] = df[column].astype(int)
-            except (IntCastingNaNError, TypeError):
+            except (IntCastingNaNError, TypeError, ValueError):
                 df[column] = df[column].astype(float)
     return df
 

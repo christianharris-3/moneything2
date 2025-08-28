@@ -25,12 +25,12 @@ if __name__ == "__main__":
         adding_spending = AddingSpending(st.session_state, db_manager)
 
         adding_spending.set_shop_brand(
-            st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True)
+            st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True, index=None)
         )
         selected_shop_locations = db_manager.get_shop_locations(adding_spending.shop_brand)
         if selected_shop_locations != []:
             adding_spending.set_shop_location(
-                st.selectbox("Location Name", selected_shop_locations, accept_new_options=True)
+                st.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
             )
         adding_spending.set_spending_date(
             st.date_input("Spending Date", format="DD/MM/YYYY")
@@ -41,14 +41,19 @@ if __name__ == "__main__":
 
         st.markdown("## Items")
 
+        if "product_selection" not in st.session_state:
+            st.session_state["product_selection"] = None
+
         selected_product = st.selectbox(
             "Add Item",
-            db_manager.get_all_products(adding_spending.shop_brand),
-            accept_new_options=True
+            options=db_manager.get_all_products(adding_spending.shop_brand),
+            accept_new_options=True, index=None, key="product_selection"
         )
+        def add_item_button_press(adding_spending_obj, selected_option):
+            adding_spending_obj.add_product(selected_option)
+            del st.session_state["product_selection"]
 
-        if st.button("Add"):
-            adding_spending.add_product(selected_product)
+        st.button("Add", on_click=lambda: add_item_button_press(adding_spending, selected_product))
 
         spending_display_df = adding_spending.to_display_df()
 
@@ -148,8 +153,8 @@ if __name__ == "__main__":
                 )
             )
 
-
     double_run()
+
 
 
 
