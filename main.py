@@ -3,8 +3,7 @@ from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
 import src.utils as utils
 
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid.shared import GridUpdateMode, DataReturnMode
+# TODO: make adding a new shop+location in the add spending tab add to the db
 
 def double_run():
     if "has_rerun" not in st.session_state:
@@ -138,7 +137,8 @@ if __name__ == "__main__":
                     {
                         "ID": {"type": "number", "editable": False},
                         "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
-                        "Location": {"type": "select", "options": db_manager.get_shop_locations(None)}
+                        "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
+                        "Category": {"type": "select", "options": db_manager.get_all_categories()}
                     },
                 )
             )

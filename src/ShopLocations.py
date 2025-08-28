@@ -22,7 +22,14 @@ class ShopLocations(DatabaseTable):
         return db_data
 
     def get_shop_locations(self, shop_brand):
-        return sorted(set(self.db_data[self.db_data["brand"] == shop_brand]["shop_location"]))
+        if shop_brand is None:
+            filtered = self.db_data
+        else:
+            filtered = self.db_data[self.db_data["brand"] == shop_brand]
+
+        return sorted(set(
+            filtered["shop_location"]
+        ))
 
     def to_display_df(self):
         df = self.db_data.rename({

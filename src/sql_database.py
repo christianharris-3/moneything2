@@ -135,7 +135,7 @@ class SQLDatabase:
                 category_id INTEGER PRIMARY KEY,
                 name TEXT,
                 importance DECIMAL,
-                parent_category INTEGER
+                parent_category_id INTEGER
             );
             """
         )

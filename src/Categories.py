@@ -8,7 +8,7 @@ class Categories(DatabaseTable):
         "category_id",
         "name",
         "importance",
-        "parent_category"
+        "parent_category_id"
     ]
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
@@ -20,11 +20,11 @@ class Categories(DatabaseTable):
         )
         db_data["parent_name"] = db_data.merge(
             db_data,
-            left_on="parent_category",
+            left_on="parent_category_id",
             right_on="category_id",
             how="left"
         )["name_y"]
-        return db_data
+        return utils.force_int_ids(db_data)
 
     def get_category_string(self, category_id, checked_ids=None) -> str:
         if utils.isNone(category_id):
@@ -42,9 +42,9 @@ class Categories(DatabaseTable):
         output = db_row["name"]
         if output is None:
             return ""
-        if db_row["parent_category"] is not None:
+        if db_row["parent_category_id"] is not None:
             parent_string = self.get_category_string(
-                db_row["parent_category"],
+                db_row["parent_category_id"],
                 checked_ids
             )
             if parent_string != "":
@@ -69,7 +69,7 @@ class Categories(DatabaseTable):
             "Parent Category": "parent_name"
         }, axis=1)
 
-        renamed_df["parent_category"] = renamed_df.merge(
+        renamed_df["parent_category_id"] = renamed_df.merge(
             renamed_df,
             left_on="parent_name",
             right_on="name",
@@ -77,6 +77,6 @@ class Categories(DatabaseTable):
         )["category_id_y"]
 
         return self.update_foreign_data(
-            renamed_df[["category_id", "name", "importance", "parent_category"]]
+            renamed_df[["category_id", "name", "importance", "parent_category_id"]]
         )
 

@@ -51,7 +51,8 @@ class Products(DatabaseTable):
 
     def to_display_df(self, shops, categories):
         df = self.update_foreign_data(
-            self.db_data, shops, categories
+            utils.force_int_ids(self.db_data),
+            shops, categories
         ).rename({
             "product_id": "ID",
             "name": "Name",

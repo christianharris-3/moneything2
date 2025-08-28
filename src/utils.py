@@ -112,7 +112,7 @@ def conform_date_string(input_string) -> str:
         month = int(month)
         year = int(year)
     except Exception as e:
-        print(e)
+        print(f"ERROR converting date string: {input_string} -> {e}")
         return input_string
     if year<100:
         year += 2000
@@ -126,7 +126,7 @@ def conform_date_string(input_string) -> str:
 def conform_time_string(input_string) -> str:
     if isNone(input_string):
         return None
-    
+
     string = input_string.lower()
     split = split_to_numbers(string)
 
