@@ -27,10 +27,9 @@ if __name__ == "__main__":
             st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True, index=None)
         )
         selected_shop_locations = db_manager.get_shop_locations(adding_spending.shop_brand)
-        if selected_shop_locations != []:
-            adding_spending.set_shop_location(
-                st.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
-            )
+        adding_spending.set_shop_location(
+            st.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
+        )
 
         adding_spending.set_spending_category(
             st.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
@@ -138,7 +137,7 @@ if __name__ == "__main__":
                         "ID": {"type": "number", "editable": False},
                         "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
                         "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
-                        "Category": {"type": "select", "options": db_manager.get_all_categories()}
+                        "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
                     },
                 )
             )

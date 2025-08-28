@@ -111,28 +111,72 @@ class AddingSpending:
     def add_spending_to_db(self):
 
         spending_event_id = self.db_manager.spending_events.generate_id()
-        shop_id = self.db_manager.shops.db_data[
-            self.db_manager.shops.db_data["brand"] == self.shop_brand
-        ].iloc[0]["shop_id"] if not utils.isNone(self.shop_brand) else None
 
-        shop_location_id = self.db_manager.shop_locations.db_data[
-            self.db_manager.shop_locations.db_data[
-                "shop_location"] == self.shop_location
-        ].iloc[0]["shop_location_id"] if not utils.isNone(self.shop_location) else None
 
+        if self.spending_category is None:
+            category_id = None
+        else:
+            filtered_category = self.db_manager.categories.db_data[
+                    self.db_manager.categories.db_data["name"] == self.spending_category
+            ]
+            if len(filtered_category) == 0:
+                category_id = None
+            else:
+                category_id = filtered_category.iloc[0]["category_id"]
+
+
+        ## Add to shops
+        if self.shop_brand is None:
+            shop_id = None
+        else:
+            filtered_shops = self.db_manager.shops.db_data[
+                self.db_manager.shops.db_data["brand"] == self.shop_brand]
+            if len(filtered_shops) > 0:
+                shop_id = filtered_shops.iloc[0]["shop_id"]
+            else:
+                shop_id = self.db_manager.shops.generate_id()
+                self.db_manager.db.insert(
+                    self.db_manager.shops.TABLE,
+                    pd.DataFrame([{
+                        "shop_id": shop_id,
+                        "brand": self.shop_brand,
+                    }]).iloc[0]
+                )
+
+        ## Add to shop locations
+        if self.shop_location is None:
+            shop_location_id = None
+        else:
+            filtered_locations = self.db_manager.shop_locations.db_data[
+                self.db_manager.shop_locations.db_data[
+                    "shop_location"] == self.shop_location]
+            if len(filtered_locations) > 0:
+                shop_location_id = filtered_locations.iloc[0]["shop_location_id"]
+            else:
+                shop_location_id = self.db_manager.shop_locations.generate_id()
+                self.db_manager.db.insert(
+                    self.db_manager.shop_locations.TABLE,
+                    pd.DataFrame([{
+                        "shop_location_id": shop_location_id,
+                        "shop_id": shop_id,
+                        "shop_location": self.shop_location,
+                    }]).iloc[0]
+                )
+
+        ## Add to Spending Events
         self.db_manager.db.insert(
             self.db_manager.spending_events.TABLE,
-            pd.DataFrame(
-                [{
-                    "spending_event_id": spending_event_id,
-                    "date": self.spending_date,
-                    "time": self.spending_time,
-                    "shop_id": shop_id,
-                    "shop_location_id": shop_location_id,
-                }]
-            ).iloc[0]
+            pd.DataFrame([{
+                "spending_event_id": spending_event_id,
+                "date": self.spending_date,
+                "time": self.spending_time,
+                "shop_id": shop_id,
+                "shop_location_id": shop_location_id,
+                "category_id": category_id
+            }]).iloc[0]
         )
 
+        ## Add new Products
         new_products =  self.spending_df[
             self.spending_df["new_item_name"].apply(
                 lambda var: not utils.isNone(var)
@@ -147,7 +191,7 @@ class AddingSpending:
                 "name": row["new_item_name"],
                 "price": row["override_price"],
                 "shop_id": shop_id,
-                "category_id": None,
+                "category_id": category_id,
             }]).iloc[0]
             self.db_manager.products.db_data.loc[
                 len(self.db_manager.products.db_data)
@@ -157,7 +201,7 @@ class AddingSpending:
                 product_row
             )
 
-
+        ## Add to Spending Items
         num_items = len(self.spending_df)
         spending_items_df = self.spending_df[["override_price", "num_purchased"]].copy()
         spending_items_df["product_id"] = self.spending_df["parent_product_id"]
