@@ -23,8 +23,12 @@ class AddingSpending:
         self.shop_location = None
 
     def set_spending_time(self, spending_time):
+        if spending_time is not None:
+            spending_time = spending_time.strftime("%I:%M%p")
         self.spending_time = spending_time
     def set_spending_date(self, spending_date):
+        if spending_date is not None:
+            spending_date = spending_date.strftime("%a %d %b %Y")
         self.spending_date = spending_date
     def set_shop_brand(self, shop_brand):
         self.shop_brand = shop_brand
@@ -48,9 +52,6 @@ class AddingSpending:
                 "override_price": None,
                 "num_purchased": 1
             }
-
-        print("PRODUCT ADDED")
-        print(self.spending_df)
 
     def to_display_df(self):
         df = self.spending_df.merge(
@@ -100,3 +101,75 @@ class AddingSpending:
         )
 
         return renamed_df[["parent_product_id", "new_item_name", "override_price", "num_purchased"]]
+
+    def add_spending_to_db(self):
+        print("STORING")
+        print(self.spending_df)
+
+        spending_event_id = self.db_manager.spending_events.generate_id()
+        shop_id = self.db_manager.shops.db_data[
+            self.db_manager.shops.db_data["brand"] == self.shop_brand
+        ].iloc[0]["shop_id"] if not utils.isNone(self.shop_brand) else None
+
+        shop_location_id = self.db_manager.shop_locations.db_data[
+            self.db_manager.shop_locations.db_data[
+                "shop_location"] == self.shop_location
+        ].iloc[0]["shop_location_id"] if not utils.isNone(self.shop_location) else None
+
+        self.db_manager.db.insert(
+            self.db_manager.spending_events.TABLE,
+            pd.DataFrame(
+                [{
+                    "spending_event_id": spending_event_id,
+                    "date": self.spending_date,
+                    "time": self.spending_time,
+                    "shop_id": shop_id,
+                    "shop_location_id": shop_location_id,
+                }]
+            ).iloc[0]
+        )
+
+        new_products =  self.spending_df[
+            self.spending_df["new_item_name"].apply(
+                lambda var: not utils.isNone(var)
+            )
+        ]
+
+        for i, row in new_products.iterrows():
+            product_id = self.db_manager.products.generate_id()
+            self.spending_df.loc[i, "parent_product_id"] = product_id
+            product_row = pd.DataFrame([{
+                "product_id": product_id,
+                "name": row["new_item_name"],
+                "price": row["override_price"],
+                "shop_id": shop_id
+            }]).iloc[0]
+            self.db_manager.products.db_data.loc[
+                len(self.db_manager.products.db_data)
+            ] = product_row
+            self.db_manager.db.insert(
+                self.db_manager.products.TABLE,
+                product_row
+            )
+
+
+        num_items = len(self.spending_df)
+        spending_items_df = self.spending_df[["override_price", "num_purchased"]].copy()
+        spending_items_df["product_id"] = self.spending_df["parent_product_id"]
+        spending_items_df["spending_event_id"] = spending_event_id
+        spending_items_df["parent_price"] = self.spending_df.merge(
+            self.db_manager.products.db_data,
+            left_on="parent_product_id",
+            right_on="product_id",
+            how="left"
+        )["price"]
+        spending_items_df["spending_item_id"] = [
+            self.db_manager.spending_items.generate_id()
+            for i in range(num_items)
+        ]
+
+        for i, row in spending_items_df[["spending_item_id"]+list(spending_items_df.columns)[:-1]].iterrows():
+            self.db_manager.db.insert(
+                self.db_manager.spending_items.TABLE,
+                row
+            )

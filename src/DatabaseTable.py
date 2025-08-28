@@ -20,6 +20,8 @@ class DatabaseTable:
             )
         )
 
+        self.created_ids = set()
+
     def save_changes(self, updated_df, db):
         updated_df = updated_df[self.COLUMNS]
         primary_key = self.COLUMNS[0]
@@ -40,18 +42,14 @@ class DatabaseTable:
 
     def generate_id(self) -> int:
         used_ids = set(self.db_data[self.COLUMNS[0]].values)
+        used_ids = used_ids | self.created_ids
 
         if len(used_ids) == 0:
-            return 1
-        return max(used_ids)+1
-
-        # id_ = 1
-        # while True:
-        #     if id_ in used_ids:
-        #         id_ += 1
-        #     else:
-        #         break
-        # return id_
+            id_ = 1
+        else:
+            id_ = max(used_ids)+1
+        self.created_ids.add(id_)
+        return id_
 
     def save_row_remove(self, id_, db):
         self.db_data = self.db_data.drop(

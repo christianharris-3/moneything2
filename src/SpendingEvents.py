@@ -17,6 +17,7 @@ class SpendingEvents(DatabaseTable):
         )
 
     def update_foreign_data(self, db_data, shops, shop_locations):
+        db_data = db_data.copy()
         db_data["shop_name"] = db_data.merge(
             shops.db_data,
             left_on="shop_id",

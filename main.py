@@ -50,11 +50,28 @@ if __name__ == "__main__":
         if st.button("Add"):
             adding_spending.add_product(selected_product)
 
+        spending_display_df = adding_spending.to_display_df()
+
         st.session_state["adding_spending_df"] = adding_spending.from_display_df(
             utils.data_editor(
-                adding_spending.to_display_df(),
+                spending_display_df,
+                {
+                    "ID": {"type": "number", "editable": False},
+                    "Price Per": {"type": "number", "format": "£%.2f"},
+                }
             )
         )
+
+        if st.dialog("Save Spending", width="large"):
+            total_cost = sum(filter(
+                lambda num: not utils.isNone(num),
+                spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
+            ))
+            st.markdown(f"Add Spending Event of spending £{total_cost:.2f}")
+            if st.button("ADD"):
+                adding_spending.add_spending_to_db()
+                # del st.session_state["adding_spending_df"]
+
 
 
     with data_base:
@@ -124,7 +141,7 @@ if __name__ == "__main__":
                     {
                         "ID": {"type": "number", "editable": False},
                         "Event ID": {"type": "select", "options": db_manager.spending_events.list_all_in_column("spending_event_id")},
-                        "Name": {"type": "select", "options": db_manager.get_all_products(None)},
+                        "Name": {"type": "select", "options": db_manager.products.list_all_in_column("name")},
                         "Price": {"type": "number", "format": "£:.2f"},
                         "Num Purchased": {"type": "number"}
                     },

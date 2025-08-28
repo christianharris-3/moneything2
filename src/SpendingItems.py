@@ -18,6 +18,7 @@ class SpendingItems(DatabaseTable):
         self.db_data = self.update_foreign_data(self.db_data, products)
 
     def update_foreign_data(self, db_data, products):
+        db_data = db_data.copy()
         db_data["product_name"] = db_data.merge(
             products.db_data,
             left_on="product_id",
@@ -36,18 +37,21 @@ class SpendingItems(DatabaseTable):
             "spending_item_id": "ID",
             "spending_event_id": "Event ID",
             "product_name": "Name",
-            "display_price": "Price",
+            "display_price": "Spent",
+            "parent_price": "Base Price",
             "num_purchased": "Num Purchased"
         }, axis=1)
 
-        return df[["ID", "Event ID", "Name", "Price", "Num Purchased"]]
+        return df[["ID", "Event ID", "Name", "Spent", "Base Price", "Num Purchased"]]
 
     def from_display_df(self, display_df, products):
+
         renamed_df = display_df.rename({
             "ID": "spending_item_id",
             "Event ID": "spending_event_id",
             "Name": "product_name",
-            "Price": "display_price",
+            "Spent": "display_price",
+            "Base Price": "parent_price",
             "Num Purchased": "num_purchased"
         }, axis=1)
 
@@ -59,11 +63,9 @@ class SpendingItems(DatabaseTable):
         )["product_id"]
 
         renamed_df["override_price"] = renamed_df["display_price"].combine(
-            self.db_data["parent_price"],
+            renamed_df["parent_price"],
             lambda override, parent: parent if utils.isNone(override) else override
         )
-        renamed_df["parent_price"] = self.db_data["parent_price"]
-
         return self.update_foreign_data(
             renamed_df[["spending_item_id", "spending_event_id", "product_id", "override_price", "parent_price", "num_purchased"]],
             products

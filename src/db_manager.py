@@ -1,4 +1,6 @@
 from src.sql_database import SQLDatabase
+import src.utils as utils
+import pandas as pd
 
 
 class DatabaseManager:
@@ -70,4 +72,5 @@ class DatabaseManager:
             self.spending_items.from_display_df(edited_df, self.products),
             self.db
         )
+
 
