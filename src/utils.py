@@ -19,6 +19,42 @@ def force_int_ids(df):
                 df[column] = df[column].astype(float)
     return df
 
+def make_display_inner_joins(*args) -> list[dict]:
+    """
+    Takes any number of lists of data to generate inner join data
+    Each input list takes the form:
+    [
+        object Object: the target object containing the data being pulled from
+        left_join_id str: the name of the column joining the 2 tables
+        source_column str: the name of the column being taken from Object
+        new_column=target_column str: the name of the new column being created
+        right_join_id str
+    ]
+
+    :param args:
+    :return:
+    """
+    display_inner_joins = []
+    for input_list in args:
+        display_inner_joins.append({
+            "object": input_list[0],
+            "left_on": input_list[1],
+            "right_on": input_list[1],
+            "source_column": input_list[2],
+            "new_column": input_list[2],
+        })
+        if len(input_list)>3:
+            display_inner_joins[-1][
+                "new_column"
+            ]=input_list[3]
+        if len(input_list)>4:
+            display_inner_joins[-1][
+                "right_on"
+            ] = input_list[4]
+
+    return display_inner_joins
+
+
 def data_editor(df, column_config=None, aggrid=False):
     if column_config is None:
         column_config = {}

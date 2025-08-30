@@ -5,6 +5,10 @@ import src.utils as utils
 class DatabaseTable:
     TABLE = "TABLE_NOT_ADDED"
     COLUMNS = ["COLUMNS_NOT_DEFINED"]
+    DISPLAY_DF_RENAMED = {"RENAME_MAPPER_NOT_DEFINED":"FIX_THIS"}
+    DISPLAY_DF_COLUMNS = None
+    display_inner_joins = []
+
     def __init__(self, select_call, columns):
         data = []
         for db_row in select_call.fetchall():
@@ -19,6 +23,14 @@ class DatabaseTable:
                 columns=self.COLUMNS,
             )
         )
+        self.INVERSE_DISPLAY_DF_RENAMED = {
+            val: key
+            for key, val in self.DISPLAY_DF_RENAMED.items()
+        }
+        if self.DISPLAY_DF_COLUMNS is None:
+            self.DISPLAY_DF_COLUMNS = list(
+                self.DISPLAY_DF_RENAMED.values()
+            )
 
         self.created_ids = set()
 
@@ -113,7 +125,58 @@ class DatabaseTable:
 
         return True
 
-    def to_display_df(self, *_):
-        raise NotImplementedError()
-    def from_display_df(self, *_):
-        raise NotImplementedError()
+    def update_foreign_data(self, db_data):
+        db_data = db_data.copy()
+
+        for inner_join in self.display_inner_joins:
+            merged_df = db_data.merge(
+                inner_join["object"].db_data,
+                left_on=inner_join["left_on"],
+                right_on=inner_join["right_on"],
+                how="left"
+            )
+
+            if inner_join["source_column"] in merged_df.columns:
+                db_data[inner_join["new_column"]] = merged_df[
+                    inner_join["source_column"]
+                ]
+            else:
+                db_data[inner_join["new_column"]] = merged_df[
+                    inner_join["source_column"]+"_y"
+                ]
+
+        return utils.force_int_ids(db_data)
+
+    def to_display_df(self, db_data=None):
+        if db_data is None:
+            db_data = self.db_data
+        df = db_data.rename(
+            self.DISPLAY_DF_RENAMED,
+            axis=1
+        )
+        return df[self.DISPLAY_DF_COLUMNS]
+    def from_display_df(self, display_df):
+        renamed_df = display_df.rename(
+            self.INVERSE_DISPLAY_DF_RENAMED,
+            axis=1
+        )
+        for inner_join in self.display_inner_joins:
+            merged_df = renamed_df.merge(
+                inner_join["object"].db_data,
+                left_on=inner_join["new_column"],
+                right_on=inner_join["source_column"],
+                how="left"
+            )
+
+            if inner_join["right_on"] in merged_df.columns:
+                renamed_df[inner_join["left_on"]] = merged_df[
+                    inner_join["right_on"]
+                ]
+            else:
+                renamed_df[inner_join["left_on"]] = merged_df[
+                    inner_join["right_on"]+"_y"
+                ]
+
+        return self.update_foreign_data(
+            renamed_df[self.COLUMNS],
+        )

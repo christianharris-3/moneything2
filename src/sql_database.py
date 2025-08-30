@@ -1,10 +1,4 @@
 import sqlite3 as sql
-from src.Categories import Categories
-from src.Products import Products
-from src.Shops import Shops
-from src.ShopLocations import ShopLocations
-from src.SpendingItems import SpendingItems
-from src.SpendingEvents import SpendingEvents
 import math
 
 class SQLDatabase:
@@ -27,11 +21,12 @@ class SQLDatabase:
             """
         set_statement = SQLDatabase.string_set(data)
         if set_statement != "":
-            sql_statement+= f"""
-                ON CONFLICT ({data.keys()[0]})
-                DO UPDATE SET {SQLDatabase.string_set(data)}
-                WHERE {data.keys()[0]}={data.values[0]}
-                """
+            sql_statement += (
+            f"""
+            ON CONFLICT ({data.keys()[0]})
+            DO UPDATE SET {SQLDatabase.string_set(data)}
+            WHERE {data.keys()[0]}={data.values[0]}
+            """)
 
         print(sql_statement)
 
@@ -74,48 +69,24 @@ class SQLDatabase:
             """
         )
 
-    def load_products(self, shops, categories):
-        products = self.cursor.execute(
-            """
-            SELECT * FROM Products
-            """
-        )
-        return Products(
-            products, shops, categories
+    def load_table(self, obj, *args):
+        return obj(
+            self.execute_sql(
+                f"SELECT * FROM {obj.TABLE}", False, False
+            ),
+            *args
         )
 
-    def load_shops(self):
-        shops = self.cursor.execute(
-            """
-            SELECT * FROM Shops
-            """
-        )
-        return Shops(shops)
+    def execute_sql(self, sql_statement, commit=True, log=True):
+        if log:
+            print("Executing SQL statement")
+            print(sql_statement)
 
-    def load_categories(self):
-        categories = self.cursor.execute(
-            "SELECT * FROM Categories"
-        )
-        return Categories(categories)
+        return_val = self.cursor.execute(sql_statement)
+        if commit:
+            self.connection.commit()
 
-    def load_locations(self, shops):
-        locations = self.cursor.execute(
-            "SELECT * FROM ShopLocations"
-        )
-        return ShopLocations(locations, shops)
-
-    def load_spending_events(self, shops, shop_locations, categories):
-        spending_events = self.cursor.execute(
-            "SELECT * FROM SpendingEvents"
-        )
-        return SpendingEvents(spending_events, shops, shop_locations, categories)
-
-    def load_spending_items(self, products):
-        spending_items = self.cursor.execute(
-            "SELECT * FROM SpendingItems"
-        )
-        return SpendingItems(spending_items, products)
-
+        return return_val
 
     def create_tables(self):
         self.cursor.execute(
@@ -177,6 +148,38 @@ class SQLDatabase:
                 override_price DECIMAL,
                 parent_price DECIMAL,
                 num_purchased INTEGER
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS MoneyStores(
+                money_store_id INTEGER PRIMARY KEY,
+                name TEXT,
+                creation_date TEXT
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS StoreSnapshot(
+                snapshot_id INTEGER PRIMARY KEY,
+                money_store_id INTEGER,
+                snapshot_date TEXT,
+                snapshot_time TEXT,
+                money_stored DECIMAL
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS InternalTransfer(
+                transfer_id INTEGER PRIMARY KEY,
+                source_store_id INTEGER,
+                target_store_id INTEGER,
+                date TEXT,
+                time TEXT,
+                money_transferred DECIMAL
             );
             """
         )

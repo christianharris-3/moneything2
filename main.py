@@ -3,7 +3,16 @@ from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
 import src.utils as utils
 
-# TODO: make adding a new shop+location in the add spending tab add to the db
+# TODO: Add Special viewing menu for previous spending + proper edit system for spending
+# TODO: Add Menu for current money,:
+#  Allow you to enter money values for different store locations, e.g. cash, different bank accounts
+#  Use given spending data to graph money stored in each location over time
+#  Allow user to log movements between accounts as well (e.g. take money out of atm)
+#  Add Spending method to add spending (the money store location used, e.g. cash/bank account)
+#  System for future modelling: make modelling irrelevant to now (spending can be added in the future, then confirmed later to the date)
+
+# TODO: unit test the mother loving fuck out of everything
+
 
 def double_run():
     if "has_rerun" not in st.session_state:
@@ -18,7 +27,13 @@ def double_run():
 if __name__ == "__main__":
     db_manager = DatabaseManager()
 
-    input_tab, data_base, data_tab = st.tabs(["Input Spending", "DataBase", "View Data"])
+    money_tab, input_tab, data_base, data_tab = st.tabs(["Money Tracker","Input Spending", "DataBase", "View Data"])
+
+    # with money_tab:
+
+        # with st.expander("Add "):
+        #     st.markdown("# this is a titlE")
+
     with input_tab:
 
         adding_spending = AddingSpending(st.session_state, db_manager)

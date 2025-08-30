@@ -1,6 +1,4 @@
-import pandas as pd
 from src.DatabaseTable import DatabaseTable
-import math
 import src.utils as utils
 
 class Shops(DatabaseTable):
@@ -9,6 +7,11 @@ class Shops(DatabaseTable):
         "shop_id",
         "brand"
     ]
+    DISPLAY_DF_RENAMED = {
+        "shop_id": "ID",
+        "brand": "Brand",
+    }
+
     def __init__(self, select_call):
         super().__init__(select_call, self.COLUMNS)
 
@@ -20,20 +23,3 @@ class Shops(DatabaseTable):
                 for id_ in self.db_data["shop_id"]
             ])
         ))
-
-    def to_display_df(self):
-        df = self.db_data.rename({
-            "shop_id": "ID",
-            "brand": "Brand",
-            "location": "Location"
-        }, axis=1
-        )
-        return df
-
-    def from_display_df(self, display_df):
-        return display_df.rename({
-            "ID": "shop_id",
-            "Brand": "brand",
-            "Location": "location"
-        }, axis=1)
-

@@ -1,4 +1,3 @@
-import pandas as pd
 from src.DatabaseTable import DatabaseTable
 import src.utils as utils
 
@@ -10,7 +9,17 @@ class Categories(DatabaseTable):
         "importance",
         "parent_category_id"
     ]
+    DISPLAY_DF_RENAMED = {
+        "category_id": "ID",
+        "name": "Name",
+        "importance": "Importance",
+        "parent_name": "Parent Category"
+    }
+
     def __init__(self, select_call):
+        self.display_inner_joins = utils.make_display_inner_joins(
+            (self, "parent_category_id", "name", "parent_name", "category_id")
+        )
         super().__init__(select_call, self.COLUMNS)
         self.db_data = self.update_foreign_data(self.db_data)
 
@@ -18,13 +27,7 @@ class Categories(DatabaseTable):
         db_data["category_string"] = db_data["category_id"].apply(
             self.get_category_string
         )
-        db_data["parent_name"] = db_data.merge(
-            db_data,
-            left_on="parent_category_id",
-            right_on="category_id",
-            how="left"
-        )["name_y"]
-        return utils.force_int_ids(db_data)
+        return super().update_foreign_data(db_data)
 
     def get_category_string(self, category_id, checked_ids=None) -> str:
         if utils.isNone(category_id):
@@ -51,32 +54,4 @@ class Categories(DatabaseTable):
                 output += "-"+parent_string
         return output
 
-    def to_display_df(self):
-        df = self.db_data.rename({
-            "category_id": "ID",
-            "name": "Name",
-            "importance": "Importance",
-            "parent_name": "Parent Category"
-        }, axis=1)
-
-        return df[["ID", "Name", "Importance", "Parent Category"]]
-
-    def from_display_df(self, display_df):
-        renamed_df = display_df.rename({
-            "ID": "category_id",
-            "Name": "name",
-            "Importance": "importance",
-            "Parent Category": "parent_name"
-        }, axis=1)
-
-        renamed_df["parent_category_id"] = renamed_df.merge(
-            renamed_df,
-            left_on="parent_name",
-            right_on="name",
-            how="left"
-        )["category_id_y"]
-
-        return self.update_foreign_data(
-            renamed_df[["category_id", "name", "importance", "parent_category_id"]]
-        )
 
