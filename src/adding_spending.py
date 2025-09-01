@@ -32,7 +32,7 @@ class AddingSpending:
         self.spending_time = spending_time
     def set_spending_date(self, spending_date):
         if spending_date is not None:
-            spending_date = spending_date.strftime("%a %d %b %Y")
+            spending_date = utils.date_to_string(spending_date)
         self.spending_date = spending_date
     def set_shop_brand(self, shop_brand):
         self.shop_brand = shop_brand

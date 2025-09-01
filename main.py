@@ -1,7 +1,9 @@
 import streamlit as st
+st.set_page_config(layout="wide")
 
 from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
+from src.add_money_store import add_money_store
 import src.utils as utils
 
 # TODO: Add Special viewing menu for previous spending + proper edit system for spending
@@ -30,10 +32,23 @@ if __name__ == "__main__":
 
     money_tab, input_tab, data_base, data_tab = st.tabs(["Money Tracker","Input Spending", "DataBase", "View Data"])
 
-    # with money_tab:
+    with money_tab:
 
-        # with st.expander("Add "):
-        #     st.markdown("# this is a titlE")
+        with st.expander("Add Money Store"):
+
+            money_store_name = st.text_input("Store Name")
+
+            creation_date = st.date_input("Creation Date", format="DD/MM/YYYY")
+
+            current_money_stored = st.number_input("Current Money Stored")
+
+            if st.button("Add Money Store"):
+                add_money_store(
+                    db_manager,
+                    money_store_name,
+                    creation_date,
+                    current_money_stored
+                )
 
     with input_tab:
 
@@ -99,113 +114,116 @@ if __name__ == "__main__":
 
     with data_base:
 
-        with st.expander("Products"):
-            db_manager.save_products_df_changes(
-                utils.data_editor(
-                    db_manager.get_products_display_df(),
-                    {
-                        "ID": {"type":"number", "editable": False},
-                        "Price": {"type": "number", "format": "£%.2f"},
-                        "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
-                        "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
-                    },
-                )
-            )
+        left, right = st.columns(2)
 
-        with st.expander("Shops"):
-            db_manager.save_shops_df_changes(
-                utils.data_editor(
-                    db_manager.get_shops_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                    },
+        with left:
+            with st.expander("Products"):
+                db_manager.save_products_df_changes(
+                    utils.data_editor(
+                        db_manager.get_products_display_df(),
+                        {
+                            "ID": {"type":"number", "editable": False},
+                            "Price": {"type": "number", "format": "£%.2f"},
+                            "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
+                            "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
+                        },
+                    )
                 )
-            )
 
-        with st.expander("ShopLocations"):
-            db_manager.save_locations_df_changes(
-                utils.data_editor(
-                    db_manager.get_locations_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Brand": {"type": "select", "options": db_manager.get_all_shop_brands()}
-                    },
+            with st.expander("Shops"):
+                db_manager.save_shops_df_changes(
+                    utils.data_editor(
+                        db_manager.get_shops_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                        },
+                    )
                 )
-            )
 
-        with st.expander("Categories"):
-            db_manager.save_categories_df_changes(
-                utils.data_editor(
-                    db_manager.get_categories_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Importance": {"type": "number"},
-                        "Parent Category": {"type": "select", "options": db_manager.get_all_categories()}
-                    },
+            with st.expander("ShopLocations"):
+                db_manager.save_locations_df_changes(
+                    utils.data_editor(
+                        db_manager.get_locations_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Brand": {"type": "select", "options": db_manager.get_all_shop_brands()}
+                        },
+                    )
                 )
-            )
 
-        with st.expander("Money Stores"):
-            db_manager.save_money_stores_df_changes(
-                utils.data_editor(
-                    db_manager.get_money_stores_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                    },
+            with st.expander("Categories"):
+                db_manager.save_categories_df_changes(
+                    utils.data_editor(
+                        db_manager.get_categories_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Importance": {"type": "number"},
+                            "Parent Category": {"type": "select", "options": db_manager.get_all_categories()}
+                        },
+                    )
                 )
-            )
+        with right:
+            with st.expander("Money Stores"):
+                db_manager.save_money_stores_df_changes(
+                    utils.data_editor(
+                        db_manager.get_money_stores_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                        },
+                    )
+                )
 
-        with st.expander("Store Snapshots"):
-            db_manager.save_store_snapshots_df_changes(
-                utils.data_editor(
-                    db_manager.get_store_snapshots_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
-                        "Balance": {"type": "number", "format": "£:.2f"}
-                    },
+            with st.expander("Store Snapshots"):
+                db_manager.save_store_snapshots_df_changes(
+                    utils.data_editor(
+                        db_manager.get_store_snapshots_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
+                            "Balance": {"type": "number", "format": "£%.2f"}
+                        },
+                    )
                 )
-            )
 
-        with st.expander("Internal Transfers"):
-            db_manager.save_internal_transfers_df_changes(
-                utils.data_editor(
-                    db_manager.get_internal_transfers_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Source": {"type": "select", "options": db_manager.get_all_money_stores()},
-                        "Target": {"type": "select", "options": db_manager.get_all_money_stores()},
-                        "Transferred": {"type": "number", "format": "£:.2f"},
-                    },
+            with st.expander("Internal Transfers"):
+                db_manager.save_internal_transfers_df_changes(
+                    utils.data_editor(
+                        db_manager.get_internal_transfers_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Source": {"type": "select", "options": db_manager.get_all_money_stores()},
+                            "Target": {"type": "select", "options": db_manager.get_all_money_stores()},
+                            "Transferred": {"type": "number", "format": "£%.2f"},
+                        },
+                    )
                 )
-            )
 
-        with st.expander("Spending Events"):
-            db_manager.save_spending_events_df_changes(
-                utils.data_editor(
-                    db_manager.get_spending_events_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
-                        "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
-                        "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
-                    },
+            with st.expander("Spending Events"):
+                db_manager.save_spending_events_df_changes(
+                    utils.data_editor(
+                        db_manager.get_spending_events_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
+                            "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
+                            "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
+                        },
+                    )
                 )
-            )
 
-        with st.expander("Spending Items"):
-            db_manager.save_spending_items_df_changes(
-                utils.data_editor(
-                    db_manager.get_spending_items_display_df(),
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Event ID": {"type": "select", "options": db_manager.spending_events.list_all_in_column("spending_event_id")},
-                        "Name": {"type": "select", "options": db_manager.products.list_all_in_column("name")},
-                        "Price": {"type": "number", "format": "£:.2f"},
-                        "Num Purchased": {"type": "number"}
-                    },
+            with st.expander("Spending Items"):
+                db_manager.save_spending_items_df_changes(
+                    utils.data_editor(
+                        db_manager.get_spending_items_display_df(),
+                        {
+                            "ID": {"type": "number", "editable": False},
+                            "Event ID": {"type": "select", "options": db_manager.spending_events.list_all_in_column("spending_event_id")},
+                            "Name": {"type": "select", "options": db_manager.products.list_all_in_column("name")},
+                            "Price": {"type": "number", "format": "£:.2f"},
+                            "Num Purchased": {"type": "number"}
+                        },
+                    )
                 )
-            )
 
 
 

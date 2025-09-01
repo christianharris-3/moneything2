@@ -124,7 +124,17 @@ def streamlit_data_editor(df, column_config: dict[str, dict]):
         num_rows="dynamic",
     )
 
-def conform_date_string(input_string) -> str:
+def conform_date_string(input_string) -> str | None:
+    date_obj = string_to_datetime(input_string)
+    if date_obj is None:
+        return None
+    elif isinstance(date_obj, str):
+        return date_obj
+    else:
+        return date_to_string(date_obj)
+
+
+def string_to_datetime(input_string):
     if isNone(input_string):
         return None
 
@@ -157,7 +167,11 @@ def conform_date_string(input_string) -> str:
     except Exception as e:
         print(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}")
         return input_string
+    return date
+
+def date_to_string(date):
     return date.strftime("%a %d %b %Y")
+
 
 def conform_time_string(input_string) -> str:
     if isNone(input_string):

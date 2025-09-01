@@ -24,6 +24,13 @@ class StoreSnapshots(DatabaseTable):
         )
         super().__init__(select_call, self.COLUMNS)
 
+    def to_display_df(self):
+        return super().to_display_df(
+            self.update_foreign_data(
+                utils.force_int_ids(self.db_data)
+            )
+        )
+
     def from_display_df(self, display_df):
         renamed_df = super().from_display_df(display_df)
 
