@@ -24,9 +24,6 @@ class Products(DatabaseTable):
             (shops, "shop_id", "brand", "shop_name")
         )
         super().__init__(select_call, self.COLUMNS)
-        self.db_data = self.update_foreign_data(
-            self.db_data
-        )
 
     def list_products_from_shop(self, shop_name):
         return sorted([

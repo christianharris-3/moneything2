@@ -1,4 +1,5 @@
 import streamlit as st
+
 from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
 import src.utils as utils
@@ -144,6 +145,41 @@ if __name__ == "__main__":
                 )
             )
 
+        with st.expander("Money Stores"):
+            db_manager.save_money_stores_df_changes(
+                utils.data_editor(
+                    db_manager.get_money_stores_display_df(),
+                    {
+                        "ID": {"type": "number", "editable": False},
+                    },
+                )
+            )
+
+        with st.expander("Store Snapshots"):
+            db_manager.save_store_snapshots_df_changes(
+                utils.data_editor(
+                    db_manager.get_store_snapshots_display_df(),
+                    {
+                        "ID": {"type": "number", "editable": False},
+                        "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
+                        "Balance": {"type": "number", "format": "£:.2f"}
+                    },
+                )
+            )
+
+        with st.expander("Internal Transfers"):
+            db_manager.save_internal_transfers_df_changes(
+                utils.data_editor(
+                    db_manager.get_internal_transfers_display_df(),
+                    {
+                        "ID": {"type": "number", "editable": False},
+                        "Source": {"type": "select", "options": db_manager.get_all_money_stores()},
+                        "Target": {"type": "select", "options": db_manager.get_all_money_stores()},
+                        "Transferred": {"type": "number", "format": "£:.2f"},
+                    },
+                )
+            )
+
         with st.expander("Spending Events"):
             db_manager.save_spending_events_df_changes(
                 utils.data_editor(
@@ -170,6 +206,8 @@ if __name__ == "__main__":
                     },
                 )
             )
+
+
 
     double_run()
 

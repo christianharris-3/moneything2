@@ -162,7 +162,7 @@ class SQLDatabase:
         )
         self.cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS StoreSnapshot(
+            CREATE TABLE IF NOT EXISTS StoreSnapshots(
                 snapshot_id INTEGER PRIMARY KEY,
                 money_store_id INTEGER,
                 snapshot_date TEXT,
@@ -173,7 +173,7 @@ class SQLDatabase:
         )
         self.cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS InternalTransfer(
+            CREATE TABLE IF NOT EXISTS InternalTransfers(
                 transfer_id INTEGER PRIMARY KEY,
                 source_store_id INTEGER,
                 target_store_id INTEGER,

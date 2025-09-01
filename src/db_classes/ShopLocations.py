@@ -19,7 +19,6 @@ class ShopLocations(DatabaseTable):
             (shops, "shop_id", "brand")
         )
         super().__init__(select_call, self.COLUMNS)
-        self.db_data = self.update_foreign_data(self.db_data)
 
     def get_shop_locations(self, shop_brand):
         if shop_brand is None:

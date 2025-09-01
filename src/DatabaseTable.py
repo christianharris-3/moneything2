@@ -33,6 +33,7 @@ class DatabaseTable:
             )
 
         self.created_ids = set()
+        self.db_data = self.update_foreign_data(self.db_data)
 
     def save_changes(self, updated_df, db):
         updated_df = updated_df[self.COLUMNS]

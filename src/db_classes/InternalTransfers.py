@@ -1,30 +1,29 @@
 from src.DatabaseTable import DatabaseTable
 import src.utils as utils
 
-class SpendingEvents(DatabaseTable):
-    TABLE = "SpendingEvents"
+class InternalTransfers(DatabaseTable):
+    TABLE = "InternalTransfers"
     COLUMNS = [
-        "spending_event_id",
+        "transfer_id",
+        "source_store_id",
+        "target_store_id",
         "date",
         "time",
-        "shop_id",
-        "shop_location_id",
-        "category_id"
+        "money_transferred"
     ]
     DISPLAY_DF_RENAMED = {
-        "spending_event_id": "ID",
+        "transfer_id": "ID",
+        "source_store": "Source",
+        "target_store": "Target",
         "date": "Date",
         "time": "Time",
-        "shop_name": "Shop",
-        "shop_location": "Location",
-        "category_string": "Category"
+        "money_transferred": "Transferred"
     }
 
-    def __init__(self, select_call, shops, shop_locations, categories):
+    def __init__(self, select_call, money_stores):
         self.display_inner_joins = utils.make_display_inner_joins(
-            (shops, "shop_id", "brand", "shop_name"),
-            (shop_locations, "shop_location_id", "shop_location"),
-            (categories, "category_id", "category_string"),
+            (money_stores, "source_store_id", "name", "source_store", "money_store_id"),
+            (money_stores, "target_store_id", "name", "target_store", "money_store_id")
         )
         super().__init__(select_call, self.COLUMNS)
 

@@ -21,7 +21,6 @@ class Categories(DatabaseTable):
             (self, "parent_category_id", "name", "parent_name", "category_id")
         )
         super().__init__(select_call, self.COLUMNS)
-        self.db_data = self.update_foreign_data(self.db_data)
 
     def update_foreign_data(self, db_data):
         db_data["category_string"] = db_data["category_id"].apply(
