@@ -7,6 +7,7 @@ class SpendingEvents(DatabaseTable):
         "spending_event_id",
         "date",
         "time",
+        "money_store_id",
         "shop_id",
         "shop_location_id",
         "category_id"
@@ -15,16 +16,18 @@ class SpendingEvents(DatabaseTable):
         "spending_event_id": "ID",
         "date": "Date",
         "time": "Time",
+        "money_store": "Money Store",
         "shop_name": "Shop",
         "shop_location": "Location",
         "category_string": "Category"
     }
 
-    def __init__(self, select_call, shops, shop_locations, categories):
+    def __init__(self, select_call, money_stores, shops, shop_locations, categories):
         self.display_inner_joins = utils.make_display_inner_joins(
+            (money_stores, "money_store_id", "name", "money_store"),
             (shops, "shop_id", "brand", "shop_name"),
             (shop_locations, "shop_location_id", "shop_location"),
-            (categories, "category_id", "category_string"),
+            (categories, "category_id", "category_string")
         )
         super().__init__(select_call, self.COLUMNS)
 

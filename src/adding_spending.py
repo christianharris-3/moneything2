@@ -24,7 +24,8 @@ class AddingSpending:
         self.spending_date = None
         self.shop_brand = None
         self.shop_location = None
-        self.spending_category = None
+        self.category_id = None
+        self.money_store_id = None
 
     def set_spending_time(self, spending_time):
         if spending_time is not None:
@@ -39,7 +40,27 @@ class AddingSpending:
     def set_shop_location(self, shop_location):
         self.shop_location = shop_location
     def set_spending_category(self, spending_category):
-        self.spending_category = spending_category
+        if spending_category is None:
+            self.category_id = None
+        else:
+            filtered_category = self.db_manager.categories.db_data[
+                    self.db_manager.categories.db_data["name"] == spending_category
+            ]
+            if len(filtered_category) == 0:
+                self.category_id = None
+            else:
+                self.category_id = filtered_category.iloc[0]["category_id"]
+    def set_money_store_used(self, money_store):
+        if money_store is None:
+            self.money_store_id = None
+        else:
+            filtered_money_stores = self.db_manager.money_stores.db_data[
+                self.db_manager.money_stores.db_data["name"] == money_store
+                ]
+            if len(filtered_money_stores) == 0:
+                self.money_store_id = None
+            else:
+                self.money_store_id = filtered_money_stores.iloc[0]["money_store_id"]
 
     def add_product(self, product_string):
         product_id = self.db_manager.products.get_product_id_from_product_string(product_string)
@@ -113,18 +134,6 @@ class AddingSpending:
         spending_event_id = self.db_manager.spending_events.generate_id()
 
 
-        if self.spending_category is None:
-            category_id = None
-        else:
-            filtered_category = self.db_manager.categories.db_data[
-                    self.db_manager.categories.db_data["name"] == self.spending_category
-            ]
-            if len(filtered_category) == 0:
-                category_id = None
-            else:
-                category_id = filtered_category.iloc[0]["category_id"]
-
-
         ## Add to shops
         if self.shop_brand is None:
             shop_id = None
@@ -170,9 +179,10 @@ class AddingSpending:
                 "spending_event_id": spending_event_id,
                 "date": self.spending_date,
                 "time": self.spending_time,
+                "money_store_id": self.money_store_id,
                 "shop_id": shop_id,
                 "shop_location_id": shop_location_id,
-                "category_id": category_id
+                "category_id": self.category_id
             }]).iloc[0]
         )
 

@@ -133,6 +133,7 @@ class SQLDatabase:
                 spending_event_id INTEGER PRIMARY KEY,
                 date TEXT,
                 time TEXT,
+                money_store_id INTEGER,
                 shop_id INTEGER,
                 shop_location_id INTEGER,
                 category_id INTEGER

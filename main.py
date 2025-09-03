@@ -52,24 +52,28 @@ if __name__ == "__main__":
 
     with input_tab:
 
+        location_column, info_column, datetime_column = st.columns(3)
         adding_spending = AddingSpending(st.session_state, db_manager)
 
         adding_spending.set_shop_brand(
-            st.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True, index=None)
+            location_column.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True, index=None)
         )
         selected_shop_locations = db_manager.get_shop_locations(adding_spending.shop_brand)
         adding_spending.set_shop_location(
-            st.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
+            location_column.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
         )
 
         adding_spending.set_spending_category(
-            st.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
+            info_column.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
+        )
+        adding_spending.set_money_store_used(
+            info_column.selectbox("Money Store Used", db_manager.get_all_money_stores(), index=None)
         )
         adding_spending.set_spending_date(
-            st.date_input("Spending Date", format="DD/MM/YYYY")
+            datetime_column.date_input("Spending Date", format="DD/MM/YYYY")
         )
         adding_spending.set_spending_time(
-            st.time_input("Spending Time", value=None)
+            datetime_column.time_input("Spending Time", value=None)
         )
 
         st.markdown("## Items")
@@ -86,7 +90,7 @@ if __name__ == "__main__":
             adding_spending_obj.add_product(selected_option)
             del st.session_state["product_selection"]
 
-        st.button("Add", on_click=lambda: add_item_button_press(adding_spending, selected_product))
+        st.button("Add Item", on_click=lambda: add_item_button_press(adding_spending, selected_product))
 
         spending_display_df = adding_spending.to_display_df()
 
@@ -106,9 +110,9 @@ if __name__ == "__main__":
                 spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
             ))
             st.markdown(f"Add Spending Event of spending £{total_cost:.2f}")
-            if st.button("ADD"):
+            if st.button("Add Spending Event"):
                 adding_spending.add_spending_to_db()
-                # del st.session_state["adding_spending_df"]
+                del st.session_state["adding_spending_df"]
 
 
 
@@ -204,6 +208,7 @@ if __name__ == "__main__":
                         db_manager.get_spending_events_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
+                            "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
                             "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
                             "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
                             "Category": {"type": "select", "options": db_manager.get_all_category_strings()}

@@ -27,7 +27,7 @@ class DatabaseManager:
         self.categories = self.db.load_table(Categories)
         self.products = self.db.load_table(Products, self.shops, self.categories)
         self.spending_events = self.db.load_table(SpendingEvents,
-            self.shops, self.shop_locations, self.categories)
+            self.money_stores, self.shops, self.shop_locations, self.categories)
         self.spending_items = self.db.load_table(SpendingItems, self.products)
 
 
