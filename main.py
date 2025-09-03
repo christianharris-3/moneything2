@@ -3,7 +3,7 @@ st.set_page_config(layout="wide")
 
 from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
-from src.add_money_store import add_money_store
+from src.add_to_db import add_money_store, add_internal_transfer
 import src.utils as utils
 
 # TODO: Add Special viewing menu for previous spending + proper edit system for spending
@@ -49,6 +49,33 @@ if __name__ == "__main__":
                     creation_date,
                     current_money_stored
                 )
+
+        with st.expander("Log Internal Transfer"):
+
+            account_column, datetime_column = st.columns(2)
+
+            source_money_store = account_column.selectbox(
+                "Source Money Store", db_manager.get_all_money_stores()
+            )
+            target_money_store = account_column.selectbox(
+                "Target Money Store", db_manager.get_all_money_stores()
+            )
+            transfer_date = datetime_column.date_input(
+                "Transfer Date", format="DD/MM/YYYY"
+            )
+            transfer_time = datetime_column.time_input(
+                "Transfer Time", value=None
+            )
+            transfer_amount = st.number_input(
+                "Transfer Amount", value=None
+            )
+            if st.button("Add Internal Transfer"):
+                add_internal_transfer(
+                    db_manager, source_money_store, target_money_store,
+                    transfer_date, transfer_time, transfer_amount
+                )
+
+
 
     with input_tab:
 

@@ -125,7 +125,7 @@ def streamlit_data_editor(df, column_config: dict[str, dict]):
     )
 
 def conform_date_string(input_string) -> str | None:
-    date_obj = string_to_datetime(input_string)
+    date_obj = string_to_date(input_string)
     if date_obj is None:
         return None
     elif isinstance(date_obj, str):
@@ -134,7 +134,7 @@ def conform_date_string(input_string) -> str | None:
         return date_to_string(date_obj)
 
 
-def string_to_datetime(input_string):
+def string_to_date(input_string):
     if isNone(input_string):
         return None
 
@@ -170,10 +170,21 @@ def string_to_datetime(input_string):
     return date
 
 def date_to_string(date):
+    if date is None:
+        return None
     return date.strftime("%a %d %b %Y")
 
 
-def conform_time_string(input_string) -> str:
+def conform_time_string(input_string) -> str | None:
+    time_obj = string_to_time(input_string)
+    if time_obj is None:
+        return None
+    elif isinstance(time_obj, str):
+        return time_obj
+    else:
+        return time_to_string(time_obj)
+
+def string_to_time(input_string):
     if isNone(input_string):
         return None
 
@@ -187,7 +198,12 @@ def conform_time_string(input_string) -> str:
     minutes = int(split[1])
     if "pm" in string:
         hours = (hours+12)%24
-    return datetime.time(hour=hours, minute=minutes%60).strftime("%I:%M%p")
+    return datetime.time(hour=hours, minute=minutes%60)
+
+def time_to_string(time):
+    if time is None:
+        return None
+    return time.strftime("%I:%M%p")
 
 def extract_numbers(string) -> str:
     output = ""
