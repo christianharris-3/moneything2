@@ -87,6 +87,16 @@ class DatabaseTable:
             return None
         return selected.iloc[0]
 
+    def get_id_from_value(self, column, value):
+        filtered = self.get_filtered_df(column, value)
+        if len(filtered) is None:
+            return None
+        else:
+            return filtered.iloc[0][self.COLUMNS[0]]
+
+    def get_filtered_df(self, column, value):
+        return self.db_data[self.db_data[column] == value]
+
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):
             db.insert(self.TABLE, updated_row)

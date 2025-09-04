@@ -4,6 +4,7 @@ st.set_page_config(layout="wide")
 from src.db_manager import DatabaseManager
 from src.adding_spending import AddingSpending
 from src.add_to_db import add_money_store, add_internal_transfer
+from src.money_tracker import build_money_ui
 import src.utils as utils
 
 # TODO: Add Special viewing menu for previous spending + proper edit system for spending
@@ -15,6 +16,10 @@ import src.utils as utils
 #  System for future modelling: make modelling irrelevant to now (spending can be added in the future, then confirmed later to the date)
 
 # TODO: unit test the mother loving fuck out of everything
+
+# TODO: add "override price" to spending events
+
+# TODO: change spending to be income/spending or add income tab
 
 
 def double_run():
@@ -74,6 +79,8 @@ if __name__ == "__main__":
                     db_manager, source_money_store, target_money_store,
                     transfer_date, transfer_time, transfer_amount
                 )
+
+        build_money_ui(db_manager)
 
 
 

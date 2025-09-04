@@ -124,17 +124,15 @@ def streamlit_data_editor(df, column_config: dict[str, dict]):
         num_rows="dynamic",
     )
 
-def conform_date_string(input_string) -> str | None:
+def conform_date_string(input_string: str) -> str:
     date_obj = string_to_date(input_string)
     if date_obj is None:
-        return None
-    elif isinstance(date_obj, str):
-        return date_obj
+        return input_string
     else:
         return date_to_string(date_obj)
 
 
-def string_to_date(input_string):
+def string_to_date(input_string) -> datetime.date | None:
     if isNone(input_string):
         return None
 
@@ -159,32 +157,30 @@ def string_to_date(input_string):
         year = int(year)
     except Exception as e:
         print(f"ERROR converting date string: {input_string} -> {e}")
-        return input_string
+        return None
     if year<100:
         year += 2000
     try:
         date = datetime.date(year, month, day)
     except Exception as e:
         print(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}")
-        return input_string
+        return None
     return date
 
-def date_to_string(date):
+def date_to_string(date: datetime.date) -> str | None:
     if date is None:
         return None
     return date.strftime("%a %d %b %Y")
 
 
-def conform_time_string(input_string) -> str | None:
+def conform_time_string(input_string: str) -> str:
     time_obj = string_to_time(input_string)
     if time_obj is None:
-        return None
-    elif isinstance(time_obj, str):
-        return time_obj
+        return input_string
     else:
         return time_to_string(time_obj)
 
-def string_to_time(input_string):
+def string_to_time(input_string: str) -> datetime.time | None:
     if isNone(input_string):
         return None
 
@@ -192,7 +188,7 @@ def string_to_time(input_string):
     split = split_to_numbers(string)
 
     if len(split)<2:
-        return input_string
+        return None
 
     hours = int(split[0])
     minutes = int(split[1])
@@ -200,19 +196,19 @@ def string_to_time(input_string):
         hours = (hours+12)%24
     return datetime.time(hour=hours, minute=minutes%60)
 
-def time_to_string(time):
+def time_to_string(time: datetime.time) -> None | str:
     if time is None:
         return None
     return time.strftime("%I:%M%p")
 
-def extract_numbers(string) -> str:
+def extract_numbers(string: str) -> str:
     output = ""
     for char in string:
         if char in "0123456789":
             output+=char
     return output
 
-def split_to_numbers(string) -> list[str]:
+def split_to_numbers(string: str) -> list[str]:
     separators = "./-_:"
     for seperator in separators:
         string = string.replace(seperator, " ")
