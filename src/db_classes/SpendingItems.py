@@ -6,7 +6,7 @@ class SpendingItems(DatabaseTable):
     TABLE = "SpendingItems"
     COLUMNS = [
         "spending_item_id",
-        "spending_event_id",
+        "transaction_id",
         "product_id",
         "override_price",
         "parent_price",
@@ -14,7 +14,7 @@ class SpendingItems(DatabaseTable):
     ]
     DISPLAY_DF_RENAMED = {
         "spending_item_id": "ID",
-        "spending_event_id": "Event ID",
+        "transaction_id": "Transaction ID",
         "product_name": "Name",
         "display_price": "Spent",
         "parent_price": "Base Price",
@@ -46,7 +46,7 @@ class SpendingItems(DatabaseTable):
     # def to_display_df(self):
     #     df = self.db_data.rename({
     #         "spending_item_id": "ID",
-    #         "spending_event_id": "Event ID",
+    #         "transaction_id": "Event ID",
     #         "product_name": "Name",
     #         "display_price": "Spent",
     #         "parent_price": "Base Price",
@@ -63,7 +63,7 @@ class SpendingItems(DatabaseTable):
         renamed_df = super().from_display_df(display_df)
         # renamed_df = display_df.rename({
         #     "ID": "spending_item_id",
-        #     "Event ID": "spending_event_id",
+        #     "Event ID": "transaction_id",
         #     "Name": "product_name",
         #     "Spent": "display_price",
         #     "Base Price": "parent_price",

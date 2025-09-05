@@ -8,14 +8,14 @@ def build_money_ui(db_manager):
         "Money Store",
         db_manager.get_all_money_stores()
     )
-
-    x_values, y_values = get_graph_info(db_manager, money_store)
+    if money_store is not None:
+        x_values, y_values = get_graph_info(db_manager, money_store)
 
 
 def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]]:
     money_store_id = db_manager.money_stores.get_id_from_value("name", money_store)
 
-    spending_events_df = db_manager.spending_events.get_filtered_df(
+    transactions_df = db_manager.transactions.get_filtered_df(
         "money_store_id", money_store_id
     )
 

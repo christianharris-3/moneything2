@@ -7,7 +7,7 @@ class Products(DatabaseTable):
         "product_id",
          "name",
          "price",
-         "shop_id",
+         "vendor_id",
          "category_id"
     ]
     DISPLAY_DF_RENAMED = {
@@ -18,10 +18,10 @@ class Products(DatabaseTable):
         "shop_name": "Shop",
     }
 
-    def __init__(self, select_call, shops, categories):
+    def __init__(self, select_call, vendors, categories):
         self.display_inner_joins = utils.make_display_inner_joins(
             (categories, "category_id", "category_string"),
-            (shops, "shop_id", "brand", "shop_name")
+            (vendors, "vendor_id", "name", "shop_name")
         )
         super().__init__(select_call, self.COLUMNS)
 

@@ -1,13 +1,11 @@
 from src.sql_database import SQLDatabase
-import src.utils as utils
-import pandas as pd
 
 from src.db_classes.Categories import Categories
 from src.db_classes.Products import Products
-from src.db_classes.Shops import Shops
+from src.db_classes.Vendors import Vendors
 from src.db_classes.ShopLocations import ShopLocations
 from src.db_classes.SpendingItems import SpendingItems
-from src.db_classes.SpendingEvents import SpendingEvents
+from src.db_classes.Transactions import Transactions
 from src.db_classes.MoneyStores import MoneyStores
 from src.db_classes.StoreSnapshots import StoreSnapshots
 from src.db_classes.InternalTransfers import InternalTransfers
@@ -22,12 +20,12 @@ class DatabaseManager:
         self.money_stores = self.db.load_table(MoneyStores)
         self.store_snapshots = self.db.load_table(StoreSnapshots, self.money_stores)
         self.internal_transfers = self.db.load_table(InternalTransfers, self.money_stores)
-        self.shops = self.db.load_table(Shops)
-        self.shop_locations = self.db.load_table(ShopLocations, self.shops)
+        self.vendors = self.db.load_table(Vendors)
+        self.shop_locations = self.db.load_table(ShopLocations, self.vendors)
         self.categories = self.db.load_table(Categories)
-        self.products = self.db.load_table(Products, self.shops, self.categories)
-        self.spending_events = self.db.load_table(SpendingEvents,
-            self.money_stores, self.shops, self.shop_locations, self.categories)
+        self.products = self.db.load_table(Products, self.vendors, self.categories)
+        self.transactions = self.db.load_table(Transactions,
+            self.money_stores, self.vendors, self.shop_locations, self.categories)
         self.spending_items = self.db.load_table(SpendingItems, self.products)
 
 
@@ -44,12 +42,12 @@ class DatabaseManager:
     def get_all_products(self, shop):
         return self.products.list_products_from_shop(shop)
 
-    def get_shops_display_df(self):
-        return self.shops.to_display_df()
-    def save_shops_df_changes(self, edited_df):
-        self.save_df_changes(self.shops, edited_df)
-    def get_all_shop_brands(self) -> list[str]:
-        return self.shops.get_all_shops()
+    def get_vendors_display_df(self):
+        return self.vendors.to_display_df()
+    def save_vendors_df_changes(self, edited_df):
+        self.save_df_changes(self.vendors, edited_df)
+    def get_all_vendor_names(self) -> list[str]:
+        return self.vendors.get_all_vendors()
 
     def get_categories_display_df(self):
         return self.categories.to_display_df()
@@ -64,13 +62,13 @@ class DatabaseManager:
         return self.shop_locations.to_display_df()
     def save_locations_df_changes(self, edited_df):
         self.save_df_changes(self.shop_locations, edited_df)
-    def get_shop_locations(self, shop_brand):
-        return self.shop_locations.get_shop_locations(shop_brand)
+    def get_shop_locations(self, shop_name):
+        return self.shop_locations.get_shop_locations(shop_name)
 
-    def get_spending_events_display_df(self):
-        return self.spending_events.to_display_df()
-    def save_spending_events_df_changes(self, edited_df):
-        self.save_df_changes(self.spending_events, edited_df)
+    def get_transactions_display_df(self):
+        return self.transactions.to_display_df()
+    def save_transactions_df_changes(self, edited_df):
+        self.save_df_changes(self.transactions, edited_df)
 
     def get_spending_items_display_df(self):
         return self.spending_items.to_display_df()

@@ -2,7 +2,7 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 from src.db_manager import DatabaseManager
-from src.adding_spending import AddingSpending
+from src.adding_transaction import AddingTransaction
 from src.add_to_db import add_money_store, add_internal_transfer
 from src.money_tracker import build_money_ui
 import src.utils as utils
@@ -35,7 +35,7 @@ def double_run():
 if __name__ == "__main__":
     db_manager = DatabaseManager()
 
-    money_tab, input_tab, data_base, data_tab = st.tabs(["Money Tracker","Input Spending", "DataBase", "View Data"])
+    money_tab, input_tab, data_base, data_tab = st.tabs(["Money Tracker","Add Transaction", "DataBase", "View Data"])
 
     with money_tab:
 
@@ -87,12 +87,12 @@ if __name__ == "__main__":
     with input_tab:
 
         location_column, info_column, datetime_column = st.columns(3)
-        adding_spending = AddingSpending(st.session_state, db_manager)
+        adding_spending = AddingTransaction(st.session_state, db_manager)
 
-        adding_spending.set_shop_brand(
-            location_column.selectbox("Shop Name", db_manager.get_all_shop_brands(), accept_new_options=True, index=None)
+        adding_spending.set_vendor_name(
+            location_column.selectbox("Vendor Name", db_manager.get_all_vendor_names(), accept_new_options=True, index=None)
         )
-        selected_shop_locations = db_manager.get_shop_locations(adding_spending.shop_brand)
+        selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
         adding_spending.set_shop_location(
             location_column.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
         )
@@ -110,43 +110,59 @@ if __name__ == "__main__":
             datetime_column.time_input("Spending Time", value=None)
         )
 
-        st.markdown("## Items")
-
-        if "product_selection" not in st.session_state:
-            st.session_state["product_selection"] = None
-
-        selected_product = st.selectbox(
-            "Add Item",
-            options=db_manager.get_all_products(adding_spending.shop_brand),
-            accept_new_options=True, index=None, key="product_selection"
+        adding_spending.set_override_money(
+            location_column.number_input("Money Transferred", value=None)
         )
-        def add_item_button_press(adding_spending_obj, selected_option):
-            adding_spending_obj.add_product(selected_option)
-            del st.session_state["product_selection"]
+        adding_spending.set_is_income(
+            info_column.selectbox("Spending or Income", ["Spending", "Income"])
+        )
 
-        st.button("Add Item", on_click=lambda: add_item_button_press(adding_spending, selected_product))
+        if adding_spending.override_money is not None:
+            total_cost = adding_spending.override_money
+        else:
+            total_cost = 0
+        if not adding_spending.is_income:
+            st.markdown("## Items")
 
-        spending_display_df = adding_spending.to_display_df()
+            if "product_selection" not in st.session_state:
+                st.session_state["product_selection"] = None
 
-        st.session_state["adding_spending_df"] = adding_spending.from_display_df(
-            utils.data_editor(
-                spending_display_df,
-                {
-                    "ID": {"type": "number", "editable": False},
-                    "Price Per": {"type": "number", "format": "£%.2f"},
-                }
+            selected_product = st.selectbox(
+                "Add Item",
+                options=db_manager.get_all_products(adding_spending.vendor_name),
+                accept_new_options=True, index=None, key="product_selection"
             )
-        )
+            def add_item_button_press(adding_spending_obj, selected_option):
+                adding_spending_obj.add_product(selected_option)
+                del st.session_state["product_selection"]
 
-        if st.dialog("Save Spending", width="large"):
+            st.button("Add Item", on_click=lambda: add_item_button_press(adding_spending, selected_product))
+
+            spending_display_df = adding_spending.to_display_df()
+
+            st.session_state["adding_spending_df"] = adding_spending.from_display_df(
+                utils.data_editor(
+                    spending_display_df,
+                    {
+                        "ID": {"type": "number", "editable": False},
+                        "Price Per": {"type": "number", "format": "£%.2f"},
+                    }
+                )
+            )
+
             total_cost = sum(filter(
                 lambda num: not utils.isNone(num),
                 spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
             ))
-            st.markdown(f"Add Spending Event of spending £{total_cost:.2f}")
-            if st.button("Add Spending Event"):
-                adding_spending.add_spending_to_db()
-                del st.session_state["adding_spending_df"]
+            st.divider()
+            st.markdown(f"Add Transaction of spending £{total_cost:.2f}")
+        else:
+            st.divider()
+            st.markdown(f"Add Income of £{total_cost:.2f}")
+        if st.button("Add Transaction"):
+            adding_spending.add_transaction_to_db()
+            del st.session_state["adding_spending_df"]
+            st.toast("Transaction Added!")
 
 
 
@@ -162,16 +178,16 @@ if __name__ == "__main__":
                         {
                             "ID": {"type":"number", "editable": False},
                             "Price": {"type": "number", "format": "£%.2f"},
-                            "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
+                            "Shop": {"type": "select", "options": db_manager.get_all_vendor_names()},
                             "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
                         },
                     )
                 )
 
-            with st.expander("Shops"):
-                db_manager.save_shops_df_changes(
+            with st.expander("Vendors"):
+                db_manager.save_vendors_df_changes(
                     utils.data_editor(
-                        db_manager.get_shops_display_df(),
+                        db_manager.get_vendors_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
                         },
@@ -184,7 +200,7 @@ if __name__ == "__main__":
                         db_manager.get_locations_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
-                            "Brand": {"type": "select", "options": db_manager.get_all_shop_brands()}
+                            "Name": {"type": "select", "options": db_manager.get_all_vendor_names()}
                         },
                     )
                 )
@@ -236,14 +252,14 @@ if __name__ == "__main__":
                     )
                 )
 
-            with st.expander("Spending Events"):
-                db_manager.save_spending_events_df_changes(
+            with st.expander("Transactions"):
+                db_manager.save_transactions_df_changes(
                     utils.data_editor(
-                        db_manager.get_spending_events_display_df(),
+                        db_manager.get_transactions_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
                             "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
-                            "Shop": {"type": "select", "options": db_manager.get_all_shop_brands()},
+                            "Shop": {"type": "select", "options": db_manager.get_all_vendor_names()},
                             "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},
                             "Category": {"type": "select", "options": db_manager.get_all_category_strings()}
                         },
@@ -256,7 +272,7 @@ if __name__ == "__main__":
                         db_manager.get_spending_items_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
-                            "Event ID": {"type": "select", "options": db_manager.spending_events.list_all_in_column("spending_event_id")},
+                            "Transaction ID": {"type": "select", "options": db_manager.transactions.list_all_in_column("transaction_id")},
                             "Name": {"type": "select", "options": db_manager.products.list_all_in_column("name")},
                             "Price": {"type": "number", "format": "£:.2f"},
                             "Num Purchased": {"type": "number"}

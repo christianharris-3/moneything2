@@ -6,25 +6,25 @@ class ShopLocations(DatabaseTable):
     COLUMNS = [
         "shop_location_id",
         "shop_location",
-        "shop_id"
+        "vendor_id"
     ]
     DISPLAY_DF_RENAMED = {
             "shop_location_id": "ID",
             "shop_location": "Location",
-            "brand": "Brand"
+            "name": "Brand"
         }
 
-    def __init__(self, select_call, shops):
+    def __init__(self, select_call, vendors):
         self.display_inner_joins = utils.make_display_inner_joins(
-            (shops, "shop_id", "brand")
+            (vendors, "vendor_id", "name")
         )
         super().__init__(select_call, self.COLUMNS)
 
-    def get_shop_locations(self, shop_brand):
-        if shop_brand is None:
+    def get_shop_locations(self, shop_name):
+        if shop_name is None:
             filtered = self.db_data
         else:
-            filtered = self.db_data[self.db_data["brand"] == shop_brand]
+            filtered = self.db_data[self.db_data["name"] == shop_name]
 
         return sorted(set(
             filtered["shop_location"]

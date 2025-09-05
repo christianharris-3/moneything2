@@ -95,7 +95,7 @@ class SQLDatabase:
                 product_id INTEGER PRIMARY KEY,
                 name TEXT,
                 price DECIMAL,
-                shop_id INTEGER,
+                vendor_id INTEGER,
                 category_id INTEGER
             );
             """
@@ -112,9 +112,9 @@ class SQLDatabase:
         )
         self.cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS Shops(
-                shop_id INTEGER PRIMARY KEY,
-                brand TEXT
+            CREATE TABLE IF NOT EXISTS Vendors(
+                vendor_id INTEGER PRIMARY KEY,
+                name TEXT
             );
             """
         )
@@ -123,28 +123,30 @@ class SQLDatabase:
             CREATE TABLE IF NOT EXISTS ShopLocations(
                 shop_location_id INTEGER PRIMARY KEY,
                 shop_location TEXT,
-                shop_id INTEGER
+                vendor_id INTEGER
             );
             """
         )
         self.cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS SpendingEvents(
-                spending_event_id INTEGER PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS Transactions(
+                transaction_id INTEGER PRIMARY KEY,
                 date TEXT,
                 time TEXT,
+                override_money DECIMAL,
                 money_store_id INTEGER,
-                shop_id INTEGER,
+                vendor_id INTEGER,
                 shop_location_id INTEGER,
                 category_id INTEGER
             );
             """
         )
+
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS SpendingItems(
                 spending_item_id INTEGER PRIMARY KEY,
-                spending_event_id INTEGER,
+                transaction_id INTEGER,
                 product_id INTEGER,
                 override_price DECIMAL,
                 parent_price DECIMAL,

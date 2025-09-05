@@ -5,7 +5,7 @@ import streamlit as st
 
 import src.utils as utils
 
-class AddingSpending:
+class AddingTransaction:
     def __init__(self, session_state, db_manager):
         if not "adding_spending_df" in session_state:
             session_state["adding_spending_df"] = pd.DataFrame(
@@ -22,10 +22,12 @@ class AddingSpending:
 
         self.spending_time = None
         self.spending_date = None
-        self.shop_brand = None
+        self.vendor_name = None
         self.shop_location = None
         self.category_id = None
         self.money_store_id = None
+        self.override_money = None
+        self.is_income = False
 
     def set_spending_time(self, spending_time):
         if spending_time is not None:
@@ -35,10 +37,14 @@ class AddingSpending:
         if spending_date is not None:
             spending_date = utils.date_to_string(spending_date)
         self.spending_date = spending_date
-    def set_shop_brand(self, shop_brand):
-        self.shop_brand = shop_brand
+    def set_vendor_name(self, vendor_name):
+        self.vendor_name = vendor_name
     def set_shop_location(self, shop_location):
         self.shop_location = shop_location
+    def set_override_money(self, override_money):
+        self.override_money = override_money
+    def set_is_income(self, is_income):
+        self.is_income = (is_income == "Income")
     def set_spending_category(self, spending_category):
         if spending_category is None:
             self.category_id = None
@@ -129,26 +135,26 @@ class AddingSpending:
 
         return renamed_df[["parent_product_id", "new_item_name", "override_price", "num_purchased"]]
 
-    def add_spending_to_db(self):
+    def add_transaction_to_db(self):
 
-        spending_event_id = self.db_manager.spending_events.generate_id()
+        transaction_id = self.db_manager.transactions.generate_id()
 
 
-        ## Add to shops
-        if self.shop_brand is None:
-            shop_id = None
+        ## Add to vendors
+        if self.vendor_name is None:
+            vendor_id = None
         else:
-            filtered_shops = self.db_manager.shops.db_data[
-                self.db_manager.shops.db_data["brand"] == self.shop_brand]
-            if len(filtered_shops) > 0:
-                shop_id = filtered_shops.iloc[0]["shop_id"]
+            filtered_vendors = self.db_manager.vendors.db_data[
+                self.db_manager.vendors.db_data["name"] == self.vendor_name]
+            if len(filtered_vendors) > 0:
+                vendor_id = filtered_vendors.iloc[0]["vendor_id"]
             else:
-                shop_id = self.db_manager.shops.generate_id()
+                vendor_id = self.db_manager.vendors.generate_id()
                 self.db_manager.db.insert(
-                    self.db_manager.shops.TABLE,
+                    self.db_manager.vendors.TABLE,
                     pd.DataFrame([{
-                        "shop_id": shop_id,
-                        "brand": self.shop_brand,
+                        "vendor_id": vendor_id,
+                        "name": self.vendor_name,
                     }]).iloc[0]
                 )
 
@@ -167,20 +173,21 @@ class AddingSpending:
                     self.db_manager.shop_locations.TABLE,
                     pd.DataFrame([{
                         "shop_location_id": shop_location_id,
-                        "shop_id": shop_id,
+                        "vendor_id": vendor_id,
                         "shop_location": self.shop_location,
                     }]).iloc[0]
                 )
 
-        ## Add to Spending Events
+        ## Add to Transactions
         self.db_manager.db.insert(
-            self.db_manager.spending_events.TABLE,
+            self.db_manager.transactions.TABLE,
             pd.DataFrame([{
-                "spending_event_id": spending_event_id,
+                "transaction_id": transaction_id,
                 "date": self.spending_date,
                 "time": self.spending_time,
+                "override_money": self.override_money,
                 "money_store_id": self.money_store_id,
-                "shop_id": shop_id,
+                "vendor_id": vendor_id,
                 "shop_location_id": shop_location_id,
                 "category_id": self.category_id
             }]).iloc[0]
@@ -200,8 +207,8 @@ class AddingSpending:
                 "product_id": product_id,
                 "name": row["new_item_name"],
                 "price": row["override_price"],
-                "shop_id": shop_id,
-                "category_id": category_id,
+                "vendor_id": vendor_id,
+                "category_id": self.category_id,
             }]).iloc[0]
             self.db_manager.products.db_data.loc[
                 len(self.db_manager.products.db_data)
@@ -215,7 +222,7 @@ class AddingSpending:
         num_items = len(self.spending_df)
         spending_items_df = self.spending_df[["override_price", "num_purchased"]].copy()
         spending_items_df["product_id"] = self.spending_df["parent_product_id"]
-        spending_items_df["spending_event_id"] = spending_event_id
+        spending_items_df["transaction_id"] = transaction_id
         spending_items_df["parent_price"] = self.spending_df.merge(
             self.db_manager.products.db_data,
             left_on="parent_product_id",
