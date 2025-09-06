@@ -251,13 +251,13 @@ if __name__ == "__main__":
                         },
                     )
                 )
-
             with st.expander("Transactions"):
                 db_manager.save_transactions_df_changes(
                     utils.data_editor(
                         db_manager.get_transactions_display_df(),
                         {
                             "ID": {"type": "number", "editable": False},
+                            "Is Income": {"type": "boolean"},
                             "Money Store": {"type": "select", "options": db_manager.get_all_money_stores()},
                             "Shop": {"type": "select", "options": db_manager.get_all_vendor_names()},
                             "Location": {"type": "select", "options": db_manager.get_shop_locations(None)},

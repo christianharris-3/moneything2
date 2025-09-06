@@ -41,13 +41,31 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
 
     change_data = []
 
-    # for i, row in transfer_df:
-    #     change_data.append({
-    #         "relative": True,
-    #         "timestamp": utils.string_to_date(row["date"]),
-    #         "type": "transfer",
-    #         "value"
-    #     })
+    for i, row in transfer_df.iterrows():
+        change_data.append({
+            "relative": True,
+            "timestamp": utils.string_to_date(row["date"]),
+            "type": "transfer",
+            "value": row["money_transferred"]
+        })
+
+    for i, row in transactions_df.iterrows():
+        value = row["override_money"]
+        if value is None:
+            db_manager.spending_items.get_filtered_df(
+                "transaction_id", row["transaction_id"]
+            )
+            value = sum(
+                db_manager.spending_items.get_filtered_df(
+                    "transaction_id", row["transaction_id"]
+                )["display_price"]
+            )
+        change_data.append({
+            "relative": True,
+            "timestamp": utils.string_to_date(row["date"]),
+            "type": "transaction",
+            "value": value
+        })
 
     print("TRANSFERS")
     print(transfer_df)

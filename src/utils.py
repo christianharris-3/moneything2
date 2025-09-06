@@ -112,6 +112,11 @@ def streamlit_data_editor(df, column_config: dict[str, dict]):
                 config_obj = st.column_config.NumberColumn(**args)
             case "select":
                 config_obj = st.column_config.SelectboxColumn(**args)
+            case "boolean":
+                config_obj = st.column_config.CheckboxColumn(**args)
+                df[column_title] = df[column_title].apply(
+                    lambda x: True if x==1 else False
+                )
             case _:
                 config_obj = st.column_config.Column(**args)
 

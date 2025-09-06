@@ -186,6 +186,7 @@ class AddingTransaction:
                 "date": self.spending_date,
                 "time": self.spending_time,
                 "override_money": self.override_money,
+                "is_income": self.is_income,
                 "money_store_id": self.money_store_id,
                 "vendor_id": vendor_id,
                 "shop_location_id": shop_location_id,

@@ -134,6 +134,7 @@ class SQLDatabase:
                 date TEXT,
                 time TEXT,
                 override_money DECIMAL,
+                is_income BOOLEAN,
                 money_store_id INTEGER,
                 vendor_id INTEGER,
                 shop_location_id INTEGER,
