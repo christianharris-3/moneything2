@@ -10,6 +10,10 @@ def build_money_ui(db_manager):
     )
     if money_store is not None:
         x_values, y_values = get_graph_info(db_manager, money_store)
+        st.line_chart(
+            pd.DataFrame({"Date":x_values, "Money":y_values}),
+            x="Date", y="Money"
+        )
 
 
 def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]]:
@@ -32,13 +36,6 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
     )
     money_store_row = db_manager.money_stores.get_db_row(money_store_id)
 
-    creation = {
-        "relative": False,
-        "timestamp": utils.string_to_date(money_store_row["creation_date"]),
-        "type": "creation",
-        "value": 0
-    }
-
     change_data = []
 
     for i, row in transfer_df.iterrows():
@@ -60,6 +57,8 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
                     "transaction_id", row["transaction_id"]
                 )["display_price"]
             )
+        if not row["is_income"]:
+            value = -value
         change_data.append({
             "relative": True,
             "timestamp": utils.string_to_date(row["date"]),
@@ -67,14 +66,39 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
             "value": value
         })
 
-    print("TRANSFERS")
-    print(transfer_df)
+    for i, row in snapshots_df.iterrows():
+        change_data.append({
+            "relative": False,
+            "timestamp": utils.string_to_date(row["snapshot_date"]),
+            "type": "snapshot",
+            "value": row["money_stored"]
+        })
 
+    creation = {
+        "relative": False,
+        "timestamp": utils.string_to_date(money_store_row["creation_date"]),
+        "type": "creation",
+        "value": 0
+    }
 
+    change_data.sort(key=lambda x: x["timestamp"])
+    if change_data[0]["timestamp"]<creation["timestamp"]:
+        creation["timestamp"] = change_data[0]["timestamp"] - datetime.timedelta(days=1)
 
+    change_data.insert(0, creation)
 
     x_values = []
     y_values = []
+
+    money_stored = 0
+    for change in change_data:
+        if change["relative"]:
+            money_stored+=change["value"]
+        else:
+            money_stored = change["value"]
+
+        x_values.append(change["timestamp"])
+        y_values.append(money_stored)
 
     return x_values, y_values
 
