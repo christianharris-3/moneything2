@@ -117,7 +117,7 @@ class AddingTransaction:
             "ID": "parent_product_id",
             "Num Purchased": "num_purchased"
         }, axis=1)
-
+        renamed_df = utils.force_int_ids(renamed_df)
         merged_df = renamed_df.merge(
             self.db_manager.products.db_data,
             left_on="parent_product_id",

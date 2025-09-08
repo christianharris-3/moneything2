@@ -2,7 +2,7 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 from src.db_manager import DatabaseManager
-from src.adding_transaction import AddingTransaction
+from src.st_transaction_input import transaction_input_tab
 from src.add_to_db import add_money_store, add_internal_transfer
 from src.money_tracker import build_money_ui
 import src.utils as utils
@@ -11,15 +11,11 @@ import src.utils as utils
 # TODO: Add Menu for current money,:
 #  Allow you to enter money values for different store locations, e.g. cash, different bank accounts
 #  Use given spending data to graph money stored in each location over time
-#  Allow user to log movements between accounts as well (e.g. take money out of atm)
-#  Add Spending method to add spending (the money store location used, e.g. cash/bank account)
 #  System for future modelling: make modelling irrelevant to now (spending can be added in the future, then confirmed later to the date)
 
 # TODO: unit test the mother loving fuck out of everything
 
-# TODO: add "override price" to spending events
-
-# TODO: change spending to be income/spending or add income tab
+# TODO: Add way to view and edit transactions (e.g. add items to transactions after adding them)
 
 
 def double_run():
@@ -85,86 +81,7 @@ if __name__ == "__main__":
 
 
     with input_tab:
-
-        location_column, info_column, datetime_column = st.columns(3)
-        adding_spending = AddingTransaction(st.session_state, db_manager)
-
-        adding_spending.set_vendor_name(
-            location_column.selectbox("Vendor Name", db_manager.get_all_vendor_names(), accept_new_options=True, index=None)
-        )
-        selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
-        adding_spending.set_shop_location(
-            location_column.selectbox("Location Name", selected_shop_locations, accept_new_options=True, index=None)
-        )
-
-        adding_spending.set_spending_category(
-            info_column.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
-        )
-        adding_spending.set_money_store_used(
-            info_column.selectbox("Money Store Used", db_manager.get_all_money_stores(), index=None)
-        )
-        adding_spending.set_spending_date(
-            datetime_column.date_input("Spending Date", format="DD/MM/YYYY")
-        )
-        adding_spending.set_spending_time(
-            datetime_column.time_input("Spending Time", value=None)
-        )
-
-        adding_spending.set_override_money(
-            location_column.number_input("Money Transferred", value=None)
-        )
-        adding_spending.set_is_income(
-            info_column.selectbox("Spending or Income", ["Spending", "Income"])
-        )
-
-        if adding_spending.override_money is not None:
-            total_cost = adding_spending.override_money
-        else:
-            total_cost = 0
-        if not adding_spending.is_income:
-            st.markdown("## Items")
-
-            if "product_selection" not in st.session_state:
-                st.session_state["product_selection"] = None
-
-            selected_product = st.selectbox(
-                "Add Item",
-                options=db_manager.get_all_products(adding_spending.vendor_name),
-                accept_new_options=True, index=None, key="product_selection"
-            )
-            def add_item_button_press(adding_spending_obj, selected_option):
-                adding_spending_obj.add_product(selected_option)
-                del st.session_state["product_selection"]
-
-            st.button("Add Item", on_click=lambda: add_item_button_press(adding_spending, selected_product))
-
-            spending_display_df = adding_spending.to_display_df()
-
-            st.session_state["adding_spending_df"] = adding_spending.from_display_df(
-                utils.data_editor(
-                    spending_display_df,
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Price Per": {"type": "number", "format": "£%.2f"},
-                    }
-                )
-            )
-
-            total_cost = sum(filter(
-                lambda num: not utils.isNone(num),
-                spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
-            ))
-            st.divider()
-            st.markdown(f"Add Transaction of spending £{total_cost:.2f}")
-        else:
-            st.divider()
-            st.markdown(f"Add Income of £{total_cost:.2f}")
-        if st.button("Add Transaction"):
-            adding_spending.add_transaction_to_db()
-            del st.session_state["adding_spending_df"]
-            st.toast("Transaction Added!")
-
-
+        transaction_input_tab(db_manager)
 
     with data_base:
 

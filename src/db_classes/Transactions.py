@@ -21,7 +21,7 @@ class Transactions(DatabaseTable):
         "override_money": "Override Money",
         "is_income": "Is Income",
         "money_store": "Money Store",
-        "shop_name": "Shop",
+        "vendor_name": "Vendor",
         "shop_location": "Location",
         "category_string": "Category"
     }
@@ -29,7 +29,7 @@ class Transactions(DatabaseTable):
     def __init__(self, select_call, money_stores, vendors, shop_locations, categories):
         self.display_inner_joins = utils.make_display_inner_joins(
             (money_stores, "money_store_id", "name", "money_store"),
-            (vendors, "vendor_id", "name", "shop_name"),
+            (vendors, "vendor_id", "name", "vendor_name"),
             (shop_locations, "shop_location_id", "shop_location"),
             (categories, "category_id", "category_string")
         )
