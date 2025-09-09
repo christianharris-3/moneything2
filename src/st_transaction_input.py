@@ -12,9 +12,9 @@ import datetime
 def transaction_input_tab(db_manager):
 
     edit_column,_, list_column = st.columns([0.59,0.01,0.4])
-    list_column.markdown("## Existing Transactions")
-
+    list_column = list_column.container(border=True)
     with list_column:
+        st.markdown("## Existing Transactions")
 
         if "transaction_viewer_date" not in st.session_state:
             st.session_state["transaction_viewer_date"] = {"depth": "years", "timestamp": None, "transaction_id": None}
@@ -54,8 +54,9 @@ def transaction_input_tab(db_manager):
         elif state["depth"] == "days":
             current.write(f"### Days in {state['timestamp'].strftime('%b %Y')}")
         elif state["depth"] == "transactions":
-            current.write(f"### Transactions on {state['timestamp'].strftime('%d %b %y')}")
-
+            current.write(f"### {state['timestamp'].strftime('%a %d %b %y')}")
+        elif state["depth"] == "specific":
+            current.write(f"### Transaction ID {state['transaction_id']}")
 
         # st.divider()
         transactions_info = get_transactions_info(db_manager, state)
@@ -68,6 +69,27 @@ def transaction_input_tab(db_manager):
                     on_click=click_button,
                     args=("specific", None, id_)
                 )
+        elif state["depth"] == "specific":
+            st.metric("Vendor", transactions_info["vendor"])
+            if not utils.isNone(transactions_info["shop_location"]):
+                st.metric("Location", transactions_info["shop_location"])
+            cols = st.columns([1,1.5])
+            cols[0].metric("Money", transactions_info["money_string"])
+            cols[1].metric("Money Store", transactions_info["money_store"])
+            if not utils.isNone(transactions_info["category_string"]):
+                st.metric("Category", transactions_info["category_string"])
+            cols = st.columns([1.2,1])
+            cols[0].metric("Date", transactions_info["date"])
+            if not utils.isNone(transactions_info["time"]):
+                cols[1].metric("Time", transactions_info["time"])
+
+            cols = st.columns([1,1])
+            if cols[0].button("Edit", use_container_width=True, icon="✏️"):
+                pass
+            if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
+                db_manager.db.delete("Transactions", "transaction_id", state["transaction_id"])
+                click_button("days")
+
         else:
             for date in transactions_info:
                 st.button(
@@ -78,12 +100,6 @@ def transaction_input_tab(db_manager):
                         move_depth(state["depth"], 1),
                         transactions_info[date]["timestamp"])
                 )
-
-
-        # st.divider()
-        # st.button("January 2025 -> £389.32 vs -£65.32", use_container_width=True)
-        # st.button("February 2025 - ", use_container_width=True)
-
 
 
     with edit_column:
@@ -229,14 +245,25 @@ def get_transactions_info(db_manager, state):
                 output[transaction_id] = f"{row['vendor_name']} -> +£{summary['income']:.2f}"
             else:
                 output[transaction_id] = f"{row['vendor_name']} -> -£{summary['spending']:.2f}"
+    elif state["depth"] == "specific":
+        row = db_manager.transactions.get_db_row(state["transaction_id"])
+
+        return {
+            "date": row["date"],
+            "time": row["time"],
+            "vendor": row["vendor_name"],
+            "shop_location": row["shop_location"],
+            "money_string": f"{'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row):.2f}",
+            "money_store": row["money_store"],
+            "category_string": row["category_string"]
+        }
     return output
 
 def summarise_transactions(db_manager, transactions_df, timestamp=None):
     transactions_df = transactions_df.copy()
     transactions_df["money_moved"] =  transactions_df.apply(
         lambda row:
-        row["override_money"] if not utils.isNone(row["override_money"])
-        else sum(db_manager.spending_items.get_filtered_df("transaction_id")["display_price"]),
+        find_transaction_value(db_manager, row),
         axis=1
     )
 
@@ -246,4 +273,8 @@ def summarise_transactions(db_manager, transactions_df, timestamp=None):
         "timestamp": timestamp,
     }
 
-
+def find_transaction_value(db_manager, df_row) -> float:
+    if not utils.isNone(df_row["override_money"]):
+        return df_row["override_money"]
+    else:
+        return sum(db_manager.spending_items.get_filtered_df("transaction_id")["display_price"])

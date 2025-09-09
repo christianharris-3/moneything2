@@ -28,12 +28,9 @@ class SQLDatabase:
             WHERE {data.keys()[0]}={data.values[0]}
             """)
 
-        print(sql_statement)
-
-        self.cursor.execute(
+        self.execute_sql(
             sql_statement
         )
-        self.connection.commit()
 
     @staticmethod
     def string_set(row):
@@ -52,16 +49,15 @@ class SQLDatabase:
         return str(var)
 
     def delete(self, table, variable, value):
-        self.cursor.execute(
+        self.execute_sql(
             f"""
             DELETE FROM {table} 
             WHERE {variable}="{value}"
             """
         )
-        self.connection.commit()
 
     def update(self, table, id_name, id_, update_values: dict):
-        self.cursor.execute(
+        self.execute_sql(
             f"""
             UPDATE {table} 
             SET ({", ".join([f"{key}={SQLDatabase.stringify(update_values[key])}" for key in update_values])})
