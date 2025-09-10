@@ -137,7 +137,9 @@ class AddingTransaction:
 
     def add_transaction_to_db(self):
 
-        transaction_id = self.db_manager.transactions.generate_id()
+        transaction_id =  st.session_state.get("editing_transaction_id", -1)
+        if transaction_id == -1:
+            transaction_id = self.db_manager.transactions.generate_id()
 
 
         ## Add to vendors

@@ -1,5 +1,3 @@
-from idlelib.pyparse import trans
-
 import streamlit as st
 from src.adding_transaction import AddingTransaction
 import src.utils as utils
@@ -67,7 +65,8 @@ def transaction_input_tab(db_manager):
                     transactions_info[id_],
                     use_container_width=True,
                     on_click=click_button,
-                    args=("specific", None, id_)
+                    args=("specific", None, id_),
+                    key=f"transaction_button_{id_}"
                 )
         elif state["depth"] == "specific":
             st.metric("Vendor", transactions_info["vendor"])
@@ -85,9 +84,9 @@ def transaction_input_tab(db_manager):
 
             cols = st.columns([1,1])
             if cols[0].button("Edit", use_container_width=True, icon="✏️"):
-                pass
+                load_transaction_input(db_manager, state["transaction_id"])
             if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
-                db_manager.db.delete("Transactions", "transaction_id", state["transaction_id"])
+                delete_transaction(db_manager, state["transaction_id"])
                 click_button("days")
 
         else:
@@ -103,38 +102,59 @@ def transaction_input_tab(db_manager):
 
 
     with edit_column:
-        st.markdown("## Add Transaction")
+        if st.session_state.get("delete_transaction_inputs", False):
+            clear_transaction_input()
+            st.session_state["delete_transaction_inputs"] = False
+
+        editing_transaction_id = st.session_state.get("editing_transaction_id", -1)
+        title, clear_button = st.columns([0.8,0.2])
+        if editing_transaction_id == -1:
+            title.markdown("## Add Transaction")
+        else:
+            title.markdown(f"## Editing Transaction with id {editing_transaction_id}")
+        clear_button.write("")
+        clear_button.button("Clear", on_click=clear_transaction_input, use_container_width=True)
+
         left_input, right_input = st.columns(2)
         adding_spending = AddingTransaction(st.session_state, db_manager)
 
         adding_spending.set_vendor_name(
-            left_input.selectbox("Vendor Name", db_manager.get_all_vendor_names(),
-                                      accept_new_options=True, index=None)
+            left_input.selectbox(
+                "Vendor Name", db_manager.get_all_vendor_names(),
+                accept_new_options=True, index=None, key="vendor_input")
         )
         selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
         adding_spending.set_shop_location(
-            right_input.selectbox("Location Name", selected_shop_locations, accept_new_options=True,
-                                      index=None)
-        )
-
-        adding_spending.set_spending_category(
-            left_input.selectbox("Spending Category", db_manager.get_all_categories(), index=None)
-        )
-        adding_spending.set_money_store_used(
-            right_input.selectbox("Money Store Used", db_manager.get_all_money_stores(), index=None)
-        )
-        adding_spending.set_spending_date(
-            left_input.date_input("Spending Date", format="DD/MM/YYYY")
-        )
-        adding_spending.set_spending_time(
-            right_input.time_input("Spending Time", value=None)
+            right_input.selectbox(
+                "Location Name", selected_shop_locations,
+                accept_new_options=True, index=None, key="location_input")
         )
 
         adding_spending.set_override_money(
-            left_input.number_input("Money Transferred", value=None)
+            left_input.number_input("Money Transferred", value=None, key="money_input")
         )
+
+        adding_spending.set_money_store_used(
+            right_input.selectbox(
+                "Money Store Used", db_manager.get_all_money_stores(),
+                index=None, key="money_store_input")
+        )
+
+        adding_spending.set_spending_date(
+            left_input.date_input("Spending Date", format="DD/MM/YYYY", key="date_input")
+        )
+        adding_spending.set_spending_time(
+            right_input.time_input("Spending Time", value=None, key="time_input")
+        )
+
+        adding_spending.set_spending_category(
+            left_input.selectbox(
+                "Spending Category", db_manager.get_all_categories(),
+                index=None, key="category_input")
+        )
+
         adding_spending.set_is_income(
-            right_input.selectbox("Spending or Income", ["Spending", "Income"])
+            right_input.selectbox("Spending or Income", ["Spending", "Income"], key="is_income_input")
         )
 
         if adding_spending.override_money is not None:
@@ -177,14 +197,43 @@ def transaction_input_tab(db_manager):
                 spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
             ))
             st.divider()
-            st.markdown(f"Add Transaction of spending £{total_cost:.2f}")
+            st.markdown(f"Save Transaction of spending £{total_cost:.2f}")
         else:
             st.divider()
-            st.markdown(f"Add Income of £{total_cost:.2f}")
-        if st.button("Add Transaction"):
+            st.markdown(f"Save Income of £{total_cost:.2f}")
+        if st.button("Save Transaction"):
             adding_spending.add_transaction_to_db()
-            del st.session_state["adding_spending_df"]
-            st.toast("Transaction Added!")
+            st.session_state["delete_transaction_inputs"] = True
+            st.toast("Transaction Saved!")
+            st.rerun()
+
+def clear_transaction_input():
+    del st.session_state["adding_spending_df"]
+    st.session_state["editing_transaction_id"] = -1
+    st.session_state["vendor_input"] = None
+    st.session_state["location_input"] = None
+    st.session_state["date_input"] = datetime.date.today()
+    st.session_state["time_input"] = None
+    st.session_state["category_input"] = None
+    st.session_state["money_store_input"] = None
+    st.session_state["is_income_input"] = "Spending"
+    st.session_state["money_input"] = None
+
+def load_transaction_input(db_manager, transaction_id):
+    row = db_manager.transactions.get_db_row(transaction_id)
+    def noneify(val):
+        if utils.isNone(val): return None
+        return val
+    st.session_state["vendor_input"] = noneify(row["vendor_name"])
+    st.session_state["location_input"] = noneify(row["shop_location"])
+    st.session_state["date_input"] = utils.string_to_date(noneify(row["date"]))
+    st.session_state["time_input"] = utils.string_to_time(noneify(row["time"]))
+    st.session_state["category_input"] = noneify(row["category_string"])
+    st.session_state["money_store_input"] = noneify(row["money_store"])
+    st.session_state["money_input"] = noneify(row["override_money"])
+    st.session_state["is_income_input"] = "Income" if row["is_income"] else "Spending"
+    st.session_state["editing_transaction_id"] = transaction_id
+
 
 def get_transactions_info(db_manager, state):
     transactions_df = db_manager.transactions.db_data
@@ -277,4 +326,9 @@ def find_transaction_value(db_manager, df_row) -> float:
     if not utils.isNone(df_row["override_money"]):
         return df_row["override_money"]
     else:
-        return sum(db_manager.spending_items.get_filtered_df("transaction_id")["display_price"])
+        return sum(db_manager.spending_items.get_filtered_df(
+            "transaction_id", df_row["transaction_id"])["display_price"])
+
+def delete_transaction(db_manager, transaction_id):
+    db_manager.db.delete("Transactions", "transaction_id", transaction_id)
+    db_manager.db.delete("SpendingItems", "transaction_id", transaction_id)
