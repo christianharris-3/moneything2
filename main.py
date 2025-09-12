@@ -17,6 +17,8 @@ import src.utils as utils
 
 # TODO: Add way to view and edit transactions (e.g. add items to transactions after adding them)
 
+# TODO: Add items to transaction editing and saving
+# TODO: add description to transactions
 
 def double_run():
     if "has_rerun" not in st.session_state:
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
 
 
-    # double_run()
+    double_run()
 
 
 

@@ -55,13 +55,13 @@ def make_display_inner_joins(*args) -> list[dict]:
     return display_inner_joins
 
 
-def data_editor(df, column_config=None, aggrid=False, container=None):
+def data_editor(df, column_config=None, aggrid=False, container=None, num_rows="dynamic"):
     if column_config is None:
         column_config = {}
     if aggrid:
         return aggrid_data_editor(df, column_config)
     else:
-        return streamlit_data_editor(df, column_config, container)
+        return streamlit_data_editor(df, column_config, container, num_rows=num_rows)
 
 def aggrid_data_editor(df, column_config: dict[str, dict]):
     grid_options = GridOptionsBuilder.from_dataframe(df)
@@ -98,7 +98,7 @@ def aggrid_data_editor(df, column_config: dict[str, dict]):
     )
     return data_edits.data
 
-def streamlit_data_editor(df, column_config: dict[str, dict], container=None):
+def streamlit_data_editor(df, column_config: dict[str, dict], container=None, num_rows="dynamic"):
     if container is None:
         container = st
 
@@ -129,7 +129,7 @@ def streamlit_data_editor(df, column_config: dict[str, dict], container=None):
         df,
         column_config=st_column_config,
         hide_index=True,
-        num_rows="dynamic",
+        num_rows=num_rows,
     )
 
 def conform_date_string(input_string: str) -> str:

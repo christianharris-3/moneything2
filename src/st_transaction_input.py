@@ -82,6 +82,19 @@ def transaction_input_tab(db_manager):
             if not utils.isNone(transactions_info["time"]):
                 cols[1].metric("Time", transactions_info["time"])
 
+            with st.expander("Items"):
+                st.dataframe(
+                    db_manager.spending_items.get_filtered_df(
+                        "transaction_id", state["transaction_id"]
+                    ).rename({
+                        "product_name": "Name",
+                        "display_price": "Price",
+                        "num_purchased": "Num Purchased"
+                    }, axis=1)[["Name", "Price", "Num Purchased"]],
+                    hide_index=True
+                )
+
+
             cols = st.columns([1,1])
             if cols[0].button("Edit", use_container_width=True, icon="✏️"):
                 load_transaction_input(db_manager, state["transaction_id"])
@@ -233,6 +246,21 @@ def load_transaction_input(db_manager, transaction_id):
     st.session_state["money_input"] = noneify(row["override_money"])
     st.session_state["is_income_input"] = "Income" if row["is_income"] else "Spending"
     st.session_state["editing_transaction_id"] = transaction_id
+
+    items_df = db_manager.spending_items.get_filtered_df("transaction_id", transaction_id)
+
+    renamed_df = items_df.rename({
+        "product_id": "parent_product_id"
+    }, axis=1)
+    renamed_df["new_item_name"] = None
+
+    st.session_state["adding_spending_df"] = renamed_df[[
+        "parent_product_id",
+        "spending_item_id",
+        "new_item_name",
+        "override_price",
+        "num_purchased"
+    ]]
 
 
 def get_transactions_info(db_manager, state):
