@@ -82,6 +82,9 @@ def transaction_input_tab(db_manager):
             if not utils.isNone(transactions_info["time"]):
                 cols[1].metric("Time", transactions_info["time"])
 
+            st.markdown("#### Description")
+            st.markdown(transactions_info["description"])
+
             with st.expander("Items"):
                 st.dataframe(
                     db_manager.spending_items.get_filtered_df(
@@ -170,6 +173,10 @@ def transaction_input_tab(db_manager):
             right_input.selectbox("Spending or Income", ["Spending", "Income"], key="is_income_input")
         )
 
+        adding_spending.set_description(
+            st.text_input("Description", value=None, key="description_input")
+        )
+
         if adding_spending.override_money is not None:
             total_cost = adding_spending.override_money
         else:
@@ -231,6 +238,7 @@ def clear_transaction_input():
     st.session_state["money_store_input"] = None
     st.session_state["is_income_input"] = "Spending"
     st.session_state["money_input"] = None
+    st.session_state["description_input"] = None
 
 def load_transaction_input(db_manager, transaction_id):
     row = db_manager.transactions.get_db_row(transaction_id)
@@ -246,6 +254,7 @@ def load_transaction_input(db_manager, transaction_id):
     st.session_state["money_input"] = noneify(row["override_money"])
     st.session_state["is_income_input"] = "Income" if row["is_income"] else "Spending"
     st.session_state["editing_transaction_id"] = transaction_id
+    st.session_state["description_input"] = row["description"]
 
     items_df = db_manager.spending_items.get_filtered_df("transaction_id", transaction_id)
 
@@ -332,7 +341,8 @@ def get_transactions_info(db_manager, state):
             "shop_location": row["shop_location"],
             "money_string": f"{'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row):.2f}",
             "money_store": row["money_store"],
-            "category_string": row["category_string"]
+            "category_string": row["category_string"],
+            "description": row["description"]
         }
     return output
 

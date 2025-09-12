@@ -15,10 +15,9 @@ import src.utils as utils
 
 # TODO: unit test the mother loving fuck out of everything
 
-# TODO: Add way to view and edit transactions (e.g. add items to transactions after adding them)
-
-# TODO: Add items to transaction editing and saving
 # TODO: add description to transactions
+
+# TODO: add "deleted" and "user_id" tag to all items in db
 
 def double_run():
     if "has_rerun" not in st.session_state:

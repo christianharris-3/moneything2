@@ -134,7 +134,8 @@ class SQLDatabase:
                 money_store_id INTEGER,
                 vendor_id INTEGER,
                 shop_location_id INTEGER,
-                category_id INTEGER
+                category_id INTEGER,
+                description TEXT
             );
             """
         )

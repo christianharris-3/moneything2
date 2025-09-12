@@ -29,6 +29,7 @@ class AddingTransaction:
         self.money_store_id = None
         self.override_money = None
         self.is_income = False
+        self.description = None
 
     def set_spending_time(self, spending_time):
         if spending_time is not None:
@@ -46,6 +47,8 @@ class AddingTransaction:
         self.override_money = override_money
     def set_is_income(self, is_income):
         self.is_income = (is_income == "Income")
+    def set_description(self, description):
+        self.description = description
     def set_spending_category(self, spending_category):
         if spending_category is None:
             self.category_id = None
@@ -203,7 +206,8 @@ class AddingTransaction:
                 "money_store_id": self.money_store_id,
                 "vendor_id": vendor_id,
                 "shop_location_id": shop_location_id,
-                "category_id": self.category_id
+                "category_id": self.category_id,
+                "description": self.description
             }]).iloc[0]
         )
 

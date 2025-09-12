@@ -12,7 +12,8 @@ class Transactions(DatabaseTable):
         "money_store_id",
         "vendor_id",
         "shop_location_id",
-        "category_id"
+        "category_id",
+        "description"
     ]
     DISPLAY_DF_RENAMED = {
         "transaction_id": "ID",
@@ -23,7 +24,8 @@ class Transactions(DatabaseTable):
         "money_store": "Money Store",
         "vendor_name": "Vendor",
         "shop_location": "Location",
-        "category_string": "Category"
+        "category_string": "Category",
+        "description": "Description"
     }
 
     def __init__(self, select_call, money_stores, vendors, shop_locations, categories):
