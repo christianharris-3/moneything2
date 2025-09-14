@@ -129,9 +129,8 @@ class AddingTransaction:
         renamed_df = edited_df.rename({
             "ID": "temp_item_id",
             "Num Purchased": "num_purchased"
-        }, axis=1)
+        }, axis=1).reset_index()
         renamed_df = utils.force_int_ids(renamed_df)
-
         renamed_df[["spending_item_id", "parent_product_id"]] = renamed_df.merge(
             self.spending_df,
             left_on="temp_item_id",
@@ -252,6 +251,18 @@ class AddingTransaction:
             right_on="product_id",
             how="left"
         )["price"]
+
+        # delete items
+        current_db_data = self.db_manager.spending_items.get_filtered_df("transaction_id", transaction_id)
+        removed_ids = set(current_db_data["spending_item_id"])-set(spending_items_df["spending_item_id"])
+        for to_remove_id in removed_ids:
+            self.db_manager.db.delete(
+                self.db_manager.spending_items.TABLE,
+                "spending_item_id",
+                to_remove_id
+            )
+
+        ## add/update items
         for i, row in spending_items_df.iterrows():
             if utils.isNone(row["spending_item_id"]):
                 new_row = dict(row)
