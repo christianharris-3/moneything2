@@ -10,6 +10,7 @@ class AddingTransaction:
         if not "adding_spending_df" in session_state:
             session_state["adding_spending_df"] = pd.DataFrame(
                 columns=[
+                    "temp_item_id",
                     "parent_product_id",
                     "spending_item_id",
                     "new_item_name",
@@ -76,6 +77,7 @@ class AddingTransaction:
         product_id = self.db_manager.products.get_product_id_from_product_string(product_string)
         if product_id is None:
             self.spending_df.loc[len(self.spending_df)] = {
+                "temp_item_id": self.generate_temp_item_id(),
                 "parent_product_id": math.nan,
                 "spending_item_id": math.nan,
                 "new_item_name": product_string,
@@ -84,6 +86,7 @@ class AddingTransaction:
             }
         else:
             self.spending_df.loc[len(self.spending_df)] = {
+                "temp_item_id": self.generate_temp_item_id(),
                 "parent_product_id": product_id,
                 "spending_item_id": math.nan,
                 "new_item_name": None,
@@ -92,14 +95,21 @@ class AddingTransaction:
             }
         st.session_state["adding_spending_df"] = self.spending_df
 
+    def generate_temp_item_id(self):
+        if len(self.spending_df)>0:
+            return max(self.spending_df["temp_item_id"])+1
+        return 0
+
     def to_display_df(self):
+        print("to spending df")
+        print(self.spending_df)
         df = self.spending_df.merge(
             self.db_manager.products.db_data,
             left_on="parent_product_id",
             right_on="product_id",
             how="left",
         ).rename({
-            "parent_product_id": "ID",
+            "temp_item_id": "ID",
             "name": "Name",
             "override_price": "Price Per",
             "price": "parent_price",
@@ -115,22 +125,22 @@ class AddingTransaction:
             df["new_item_name"],
             lambda parent, new: parent if not utils.isNone(parent) else new
         )
-
+        print(df)
         return df[["ID", "Name", "Price Per", "Num Purchased"]]
 
     def from_display_df(self, edited_df):
         renamed_df = edited_df.rename({
-            "ID": "parent_product_id",
+            "ID": "temp_item_id",
             "Num Purchased": "num_purchased"
         }, axis=1)
         renamed_df = utils.force_int_ids(renamed_df)
 
-        renamed_df["spending_item_id"] = renamed_df.merge(
+        renamed_df[["spending_item_id", "parent_product_id"]] = renamed_df.merge(
             self.spending_df,
-            left_on="parent_product_id",
-            right_on="parent_product_id",
+            left_on="temp_item_id",
+            right_on="temp_item_id",
             how="left"
-        )["spending_item_id"]
+        )[["spending_item_id", "parent_product_id"]]
 
 
         merged_df = renamed_df.merge(
@@ -147,15 +157,9 @@ class AddingTransaction:
             merged_df["name"],
             lambda combined, parent: combined if utils.isNone(parent) else None
         )
-        return renamed_df[["parent_product_id", "spending_item_id", "new_item_name", "override_price", "num_purchased"]]
+        return renamed_df[["temp_item_id", "parent_product_id", "spending_item_id", "new_item_name", "override_price", "num_purchased"]]
 
     def add_transaction_to_db(self):
-
-        transaction_id =  st.session_state.get("editing_transaction_id", -1)
-        if transaction_id == -1:
-            transaction_id = self.db_manager.transactions.generate_id()
-
-
         ## Add to vendors
         if self.vendor_name is None:
             vendor_id = None
@@ -165,13 +169,11 @@ class AddingTransaction:
             if len(filtered_vendors) > 0:
                 vendor_id = filtered_vendors.iloc[0]["vendor_id"]
             else:
-                vendor_id = self.db_manager.vendors.generate_id()
-                self.db_manager.db.insert(
+                vendor_id = self.db_manager.db.create_row(
                     self.db_manager.vendors.TABLE,
-                    pd.DataFrame([{
-                        "vendor_id": vendor_id,
+                    {
                         "name": self.vendor_name,
-                    }]).iloc[0]
+                    }
                 )
 
         ## Add to shop locations
@@ -184,60 +186,67 @@ class AddingTransaction:
             if len(filtered_locations) > 0:
                 shop_location_id = filtered_locations.iloc[0]["shop_location_id"]
             else:
-                shop_location_id = self.db_manager.shop_locations.generate_id()
-                self.db_manager.db.insert(
+                shop_location_id = self.db_manager.db.create_row(
                     self.db_manager.shop_locations.TABLE,
-                    pd.DataFrame([{
-                        "shop_location_id": shop_location_id,
+                    {
                         "vendor_id": vendor_id,
                         "shop_location": self.shop_location,
-                    }]).iloc[0]
+                    }
                 )
 
         ## Add to Transactions
-        self.db_manager.db.insert(
-            self.db_manager.transactions.TABLE,
-            pd.DataFrame([{
-                "transaction_id": transaction_id,
-                "date": self.spending_date,
-                "time": self.spending_time,
-                "override_money": self.override_money,
-                "is_income": self.is_income,
-                "money_store_id": self.money_store_id,
-                "vendor_id": vendor_id,
-                "shop_location_id": shop_location_id,
-                "category_id": self.category_id,
-                "description": self.description
-            }]).iloc[0]
-        )
+        transaction_data = {
+            "date": self.spending_date,
+            "time": self.spending_time,
+            "override_money": self.override_money,
+            "is_income": self.is_income,
+            "money_store_id": self.money_store_id,
+            "vendor_id": vendor_id,
+            "shop_location_id": shop_location_id,
+            "category_id": self.category_id,
+            "description": self.description
+        }
+        transaction_id = st.session_state.get("editing_transaction_id", -1)
+        if transaction_id == -1:
+            transaction_id = self.db_manager.db.create_row(
+                self.db_manager.transactions.TABLE,
+                transaction_data
+            )
+        else:
+            self.db_manager.db.update_row(
+                self.db_manager.transactions.TABLE,
+                transaction_data,
+                "transaction_id",
+                transaction_id
+            )
 
         ## Add new Products
-        new_products =  self.spending_df[
+        new_products_df =  self.spending_df[
             self.spending_df["new_item_name"].apply(
                 lambda var: not utils.isNone(var)
             )
         ]
 
-        for i, row in new_products.iterrows():
-            product_id = self.db_manager.products.generate_id()
-            self.spending_df.loc[i, "parent_product_id"] = product_id
-            product_row = pd.DataFrame([{
-                "product_id": product_id,
+        for i, row in new_products_df.iterrows():
+            product_data = {
                 "name": row["new_item_name"],
                 "price": row["override_price"],
                 "vendor_id": vendor_id,
                 "category_id": self.category_id,
-            }]).iloc[0]
+            }
+            product_id = self.db_manager.db.create_row(
+                self.db_manager.products.TABLE,
+                product_data
+            )
+            self.spending_df.loc[i, "parent_product_id"] = product_id
+            product_data["product_id"] = product_id
             self.db_manager.products.db_data.loc[
                 len(self.db_manager.products.db_data)
-            ] = product_row
-            self.db_manager.db.insert(
-                self.db_manager.products.TABLE,
-                product_row
-            )
+            ] = product_data
+
 
         ## Add to Spending Items
-        spending_items_df = self.spending_df[["override_price", "num_purchased"]].copy()
+        spending_items_df = self.spending_df[["override_price", "num_purchased", "spending_item_id"]].copy()
         spending_items_df["product_id"] = self.spending_df["parent_product_id"]
         spending_items_df["transaction_id"] = transaction_id
         spending_items_df["parent_price"] = self.spending_df.merge(
@@ -246,12 +255,19 @@ class AddingTransaction:
             right_on="product_id",
             how="left"
         )["price"]
-        spending_items_df["spending_item_id"] = self.spending_df["spending_item_id"].apply(
-            lambda id_: id_ if not utils.isNone(id_) else self.db_manager.spending_items.generate_id()
-        )
-
-        for i, row in spending_items_df[["spending_item_id"]+list(spending_items_df.columns)[:-1]].iterrows():
-            self.db_manager.db.insert(
-                self.db_manager.spending_items.TABLE,
-                row
-            )
+        print(spending_items_df)
+        for i, row in spending_items_df.iterrows():
+            if utils.isNone(row["spending_item_id"]):
+                new_row = dict(row)
+                new_row.pop("spending_item_id", None)
+                self.db_manager.db.create_row(
+                    self.db_manager.spending_items.TABLE,
+                    new_row
+                )
+            else:
+                self.db_manager.db.update_row(
+                    self.db_manager.spending_items.TABLE,
+                    dict(row),
+                    "spending_item_id",
+                    row["spending_item_id"]
+                )

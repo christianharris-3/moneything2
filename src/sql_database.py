@@ -1,43 +1,57 @@
 import sqlite3 as sql
 import math
+import datetime
 
 class SQLDatabase:
     def __init__(self):
+        self.user_id = 501
         self.connection = sql.connect("database.db")
         self.cursor = self.connection.cursor()
 
-    def insert(self, table: str, data):
-        """
-        Inserts/Overwrites the values in a row with the given values
-
-        :param table: the string representing the database table
-        :param data: A row of a dataframe
-        :return:
-        """
-
-        sql_statement = f"""
-            INSERT INTO {table} ("{'", "'.join(data.keys())}")
-            VALUES ({', '.join(map(self.stringify, data.values))})
-            """
-        set_statement = SQLDatabase.string_set(data)
-        if set_statement != "":
-            sql_statement += (
-            f"""
-            ON CONFLICT ({data.keys()[0]})
-            DO UPDATE SET {SQLDatabase.string_set(data)}
-            WHERE {data.keys()[0]}={data.values[0]}
-            """)
-
-        self.execute_sql(
-            sql_statement
-        )
+    # def insert(self, table: str, data, exists=False) -> int:
+    #     """
+    #     Inserts/Overwrites the values in a row with the given values
+    #
+    #     :param table: the string representing the database table
+    #     :param data: A row of a dataframe
+    #     :return:
+    #     """
+    #
+    #     if exists is None:
+    #         exists = self.get_exists(table, data)
+    #
+    #     if not exists:
+    #         self.create_row(table, data)
+    #     else:
+    #         set_statement = SQLDatabase.string_set(data)
+    #         sql_statement = f"""
+    #             UPDATE SET {set_statement}
+    #             WHERE {data.keys()[0]}={data.values[0]}
+    #             """
+    #
+    #         self.execute_sql(
+    #             f"""
+    #             UPDATE MetaData
+    #             SET edited_timestamp = "{datetime.datetime.now().isoformat()}"
+    #             WHERE meta_data_id = (
+    #                 SELECT meta_data_id FROM {table}
+    #                 WHERE {data.keys()[0]}={data.values[0]}
+    #             );
+    #             """
+    #         )
+    #     if sql_statement is not None:
+    #         self.execute_sql(
+    #             sql_statement
+    #         )
+    #     return self.cursor.lastrowid
 
     @staticmethod
     def string_set(row):
+        items = list(row.items())
         values = []
-        for i in range(1, len(row.values)):
-            if row.values[i] is not None:
-                values.append(f"{row.keys()[i]}={SQLDatabase.stringify(row.values[i])}")
+        for key, val in items:
+            if val is not None:
+                values.append(f"{key}={SQLDatabase.stringify(val)}")
         return ", ".join(values)
 
     @staticmethod
@@ -48,27 +62,96 @@ class SQLDatabase:
             return f"\"{var}\""
         return str(var)
 
-    def delete(self, table, variable, value):
+    def get_exists(self, table, data):
+        value = self.execute_sql(
+            f"""
+            SELECT * FROM {table} WHERE {data.keys()[0]}={data.values[0]}
+            """,
+            False, False
+        )
+        return len(value.fetchall())>1
+
+    def generate_meta_data(self) -> int:
+        """
+        adds meta data entry to the db
+        :return: new meta data id
+        """
+        now = datetime.datetime.now().isoformat()
         self.execute_sql(
             f"""
-            DELETE FROM {table} 
-            WHERE {variable}="{value}"
+            INSERT INTO MetaData
+            (created_timestamp, edited_timestamp, row_deleted, user_id)
+            VALUES
+            ("{now}", "{now}", 0, {self.user_id})
             """
         )
 
-    def update(self, table, id_name, id_, update_values: dict):
+        return self.cursor.lastrowid
+
+
+    def delete(self, table, variable, value):
         self.execute_sql(
             f"""
-            UPDATE {table} 
-            SET ({", ".join([f"{key}={SQLDatabase.stringify(update_values[key])}" for key in update_values])})
-            WHERE {id_name}={id_}
+            UPDATE MetaData
+            SET row_deleted = 1
+            WHERE meta_data_id IN (
+                SELECT meta_data_id FROM {table}
+                WHERE {variable}="{value}"
+            );
             """
         )
+    def create_row(self, table: str, data: dict) -> int:
+        """
+        :param table: name of the table
+        :param data: dictionary of data to be saved, not including primary key of table
+        :return: id of table
+        """
+        meta_data_id = self.generate_meta_data()
+        sql_statement = f"""
+            INSERT INTO {table} ("{'", "'.join(data.keys())}", "meta_data_id")
+            VALUES ({', '.join(map(self.stringify, data.values()))}, {meta_data_id})
+            """
+        self.execute_sql(sql_statement)
+        return self.cursor.lastrowid
+
+    def update_row(self, table: str, data: dict, id_name: str, id_: int):
+        """
+
+        :param table: name of the table
+        :param data: dictionary of data to update, not including primary key
+        :param id_name: string column name of id, e.g. "product_id"
+        :param id_: the id value for this row, e.g. 5
+        :return: None
+        """
+        set_statement = SQLDatabase.string_set(data)
+        if set != "":
+            self.execute_sql(
+                f"""
+                UPDATE {table} SET {set_statement}
+                WHERE {id_name}={id_}
+                """
+            )
+            self.execute_sql(
+                f"""
+                UPDATE MetaData
+                SET edited_timestamp = "{datetime.datetime.now().isoformat()}"
+                WHERE meta_data_id = (
+                    SELECT meta_data_id FROM {table} 
+                    WHERE {id_name}={id_}
+                );
+                """
+            )
 
     def load_table(self, obj, *args):
         return obj(
             self.execute_sql(
-                f"SELECT * FROM {obj.TABLE}", False, False
+                f"""
+                SELECT {",".join([obj.TABLE+"."+col for col in obj.COLUMNS])}
+                FROM {obj.TABLE}
+                JOIN MetaData ON {obj.TABLE}.meta_data_id = MetaData.meta_data_id
+                WHERE MetaData.user_id = {self.user_id} AND MetaData.row_deleted = 0;
+                """,
+                False, False
             ),
             *args
         )
@@ -88,7 +171,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Products(
-                product_id INTEGER PRIMARY KEY,
+                product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 name TEXT,
                 price DECIMAL,
                 vendor_id INTEGER,
@@ -99,7 +183,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Categories(
-                category_id INTEGER PRIMARY KEY,
+                category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 name TEXT,
                 importance DECIMAL,
                 parent_category_id INTEGER
@@ -109,7 +194,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Vendors(
-                vendor_id INTEGER PRIMARY KEY,
+                vendor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 name TEXT
             );
             """
@@ -117,7 +203,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS ShopLocations(
-                shop_location_id INTEGER PRIMARY KEY,
+                shop_location_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 shop_location TEXT,
                 vendor_id INTEGER
             );
@@ -126,7 +213,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Transactions(
-                transaction_id INTEGER PRIMARY KEY,
+                transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 date TEXT,
                 time TEXT,
                 override_money DECIMAL,
@@ -143,7 +231,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS SpendingItems(
-                spending_item_id INTEGER PRIMARY KEY,
+                spending_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 transaction_id INTEGER,
                 product_id INTEGER,
                 override_price DECIMAL,
@@ -155,7 +244,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS MoneyStores(
-                money_store_id INTEGER PRIMARY KEY,
+                money_store_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 name TEXT,
                 creation_date TEXT
             );
@@ -164,7 +254,8 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS StoreSnapshots(
-                snapshot_id INTEGER PRIMARY KEY,
+                snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 money_store_id INTEGER,
                 snapshot_date TEXT,
                 snapshot_time TEXT,
@@ -175,12 +266,24 @@ class SQLDatabase:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS InternalTransfers(
-                transfer_id INTEGER PRIMARY KEY,
+                transfer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                meta_data_id INTEGER,
                 source_store_id INTEGER,
                 target_store_id INTEGER,
                 date TEXT,
                 time TEXT,
                 money_transferred DECIMAL
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS MetaData(
+                meta_data_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_timestamp TEXT,
+                edited_timestamp TEXT,
+                row_deleted BOOLEAN,
+                user_id INTEGER
             );
             """
         )

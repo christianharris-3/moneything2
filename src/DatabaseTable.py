@@ -53,17 +53,6 @@ class DatabaseTable:
             if original_row[primary_key] not in updated_df[primary_key].values:
                 self.save_row_remove(original_row[primary_key], db)
 
-    def generate_id(self) -> int:
-        used_ids = set(self.db_data[self.COLUMNS[0]].values)
-        used_ids = used_ids | self.created_ids
-
-        if len(used_ids) == 0:
-            id_ = 1
-        else:
-            id_ = max(used_ids)+1
-        self.created_ids.add(id_)
-        return id_
-
     def save_row_remove(self, id_, db):
         self.db_data = self.db_data.drop(
             self.db_data[self.db_data[self.COLUMNS[0]] == id_].index[0]
@@ -71,14 +60,11 @@ class DatabaseTable:
         db.delete(self.TABLE, self.COLUMNS[0], id_)
 
     def save_row_added(self, updated_row, db):
-        id_ = self.generate_id()
-        updated_row[self.COLUMNS[0]] = id_
-        print("ADDING ID ",id_, "to table", self.TABLE)
-        print("new_row:\n", updated_row)
-        self.save_row_changes(
-            self.get_db_row(id_),
-            updated_row,
-            db
+        row_data = dict(updated_row)
+        row_data.pop(self.COLUMNS[0], None)
+        db.create_row(
+            self.TABLE,
+            row_data
         )
 
     def get_db_row(self, id_):
@@ -99,7 +85,20 @@ class DatabaseTable:
 
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):
-            db.insert(self.TABLE, updated_row)
+            differences = {}
+            for column in updated_row.keys():
+                if (column not in original_row) or (original_row[column] != updated_row[column]):
+                    differences[column] = updated_row[column]
+            print(" =============== updating thing")
+            print(original_row)
+            print(updated_row)
+            print("differences:",differences)
+            db.update_row(
+                self.TABLE,
+                differences,
+                self.COLUMNS[0],
+                updated_row[self.COLUMNS[0]]
+            )
 
     def list_all_in_column(self, column):
         return sorted(filter(

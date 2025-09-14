@@ -19,6 +19,8 @@ import src.utils as utils
 
 # TODO: add "deleted" and "user_id" tag to all items in db
 
+# TODO fix random sql calls when nothing should be running, and items being weird
+
 def double_run():
     if "has_rerun" not in st.session_state:
         st.session_state["has_rerun"] = False

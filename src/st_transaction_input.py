@@ -262,8 +262,10 @@ def load_transaction_input(db_manager, transaction_id):
         "product_id": "parent_product_id"
     }, axis=1)
     renamed_df["new_item_name"] = None
+    renamed_df["temp_item_id"] = range(len(renamed_df))
 
     st.session_state["adding_spending_df"] = renamed_df[[
+        "temp_item_id",
         "parent_product_id",
         "spending_item_id",
         "new_item_name",
@@ -278,6 +280,10 @@ def get_transactions_info(db_manager, state):
         transactions_df["transaction_id"],
         transactions_df["date"].apply(utils.string_to_date)
     ))
+    transactions_dict = {
+        key: value for key, value in transactions_dict.items()
+        if value is not None
+    }
     output = {}
     if state["depth"] == "years":
         years = defaultdict(list)
