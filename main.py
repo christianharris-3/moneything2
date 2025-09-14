@@ -9,17 +9,10 @@ import src.utils as utils
 
 # TODO: Add Special viewing menu for previous spending + proper edit system for spending
 # TODO: Add Menu for current money,:
-#  Allow you to enter money values for different store locations, e.g. cash, different bank accounts
 #  Use given spending data to graph money stored in each location over time
 #  System for future modelling: make modelling irrelevant to now (spending can be added in the future, then confirmed later to the date)
 
 # TODO: unit test the mother loving fuck out of everything
-
-# TODO: add description to transactions
-
-# TODO: add "deleted" and "user_id" tag to all items in db
-
-# TODO fix random sql calls when nothing should be running, and items being weird
 
 def double_run():
     if "has_rerun" not in st.session_state:
