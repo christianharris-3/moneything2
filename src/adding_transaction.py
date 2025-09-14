@@ -209,9 +209,13 @@ class AddingTransaction:
                 transaction_data
             )
         else:
+            differences = utils.get_row_differences(
+                self.db_manager.transactions.get_db_row(transaction_id),
+                transaction_data
+            )
             self.db_manager.db.update_row(
                 self.db_manager.transactions.TABLE,
-                transaction_data,
+                differences,
                 "transaction_id",
                 transaction_id
             )
@@ -272,9 +276,12 @@ class AddingTransaction:
                     new_row
                 )
             else:
+                original_row = self.db_manager.spending_items.get_db_row(row["spending_item_id"])
+                differences = utils.get_row_differences(original_row, row)
+
                 self.db_manager.db.update_row(
                     self.db_manager.spending_items.TABLE,
-                    dict(row),
+                    differences,
                     "spending_item_id",
                     row["spending_item_id"]
                 )

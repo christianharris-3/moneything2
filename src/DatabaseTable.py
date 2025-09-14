@@ -85,14 +85,9 @@ class DatabaseTable:
 
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):
-            differences = {}
-            for column in updated_row.keys():
-                if (column not in original_row) or (original_row[column] != updated_row[column]):
-                    differences[column] = updated_row[column]
-
             db.update_row(
                 self.TABLE,
-                differences,
+                utils.get_row_differences(original_row, updated_row),
                 self.COLUMNS[0],
                 updated_row[self.COLUMNS[0]]
             )

@@ -124,7 +124,7 @@ class SQLDatabase:
         :return: None
         """
         set_statement = SQLDatabase.string_set(data)
-        if set != "":
+        if set_statement != "":
             self.execute_sql(
                 f"""
                 UPDATE {table} SET {set_statement}

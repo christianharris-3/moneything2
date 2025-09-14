@@ -2,6 +2,7 @@ import math
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
+import pandas as pd
 import streamlit as st
 import datetime
 
@@ -18,6 +19,15 @@ def force_int_ids(df):
             except (IntCastingNaNError, TypeError, ValueError):
                 df[column] = df[column].astype(float)
     return df
+
+def get_row_differences(original_row, updated_row):
+    differences = {}
+    for column in updated_row.keys():
+        if (column not in original_row) or (original_row[column] != updated_row[column]):
+            if not (pd.isna(original_row[column]) and pd.isna(updated_row[column])):
+                differences[column] = updated_row[column]
+    return differences
+
 
 def make_display_inner_joins(*args) -> list[dict]:
     """
