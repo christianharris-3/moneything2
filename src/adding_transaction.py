@@ -47,7 +47,10 @@ class AddingTransaction:
     def set_override_money(self, override_money):
         self.override_money = override_money
     def set_is_income(self, is_income):
-        self.is_income = (is_income == "Income")
+        if isinstance(is_income, str):
+            self.is_income = (is_income == "Income")
+        else:
+            self.is_income = is_income
     def set_description(self, description):
         self.description = description
     def set_spending_category(self, spending_category):
