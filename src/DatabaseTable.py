@@ -89,10 +89,7 @@ class DatabaseTable:
             for column in updated_row.keys():
                 if (column not in original_row) or (original_row[column] != updated_row[column]):
                     differences[column] = updated_row[column]
-            print(" =============== updating thing")
-            print(original_row)
-            print(updated_row)
-            print("differences:",differences)
+
             db.update_row(
                 self.TABLE,
                 differences,
@@ -140,7 +137,9 @@ class DatabaseTable:
 
         for inner_join in self.display_inner_joins:
             merged_df = db_data.merge(
-                inner_join["object"].db_data,
+                inner_join["object"].db_data.drop_duplicates(
+                    subset=[inner_join["right_on"]]
+                ),
                 left_on=inner_join["left_on"],
                 right_on=inner_join["right_on"],
                 how="left"
@@ -172,7 +171,9 @@ class DatabaseTable:
         )
         for inner_join in self.display_inner_joins:
             merged_df = renamed_df.merge(
-                inner_join["object"].db_data,
+                inner_join["object"].db_data.drop_duplicates(
+                    subset=[inner_join["source_column"]]
+                ),
                 left_on=inner_join["new_column"],
                 right_on=inner_join["source_column"],
                 how="left"

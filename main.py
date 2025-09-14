@@ -21,6 +21,8 @@ import src.utils as utils
 
 # TODO fix random sql calls when nothing should be running, and items being weird
 
+# TODO: FORCE PRODUCT NAMES TO BE UNIQUE? IDFK FIX THE STUPID BUG
+
 def double_run():
     if "has_rerun" not in st.session_state:
         st.session_state["has_rerun"] = False

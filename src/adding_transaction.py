@@ -101,8 +101,6 @@ class AddingTransaction:
         return 0
 
     def to_display_df(self):
-        print("to spending df")
-        print(self.spending_df)
         df = self.spending_df.merge(
             self.db_manager.products.db_data,
             left_on="parent_product_id",
@@ -125,7 +123,6 @@ class AddingTransaction:
             df["new_item_name"],
             lambda parent, new: parent if not utils.isNone(parent) else new
         )
-        print(df)
         return df[["ID", "Name", "Price Per", "Num Purchased"]]
 
     def from_display_df(self, edited_df):
@@ -255,7 +252,6 @@ class AddingTransaction:
             right_on="product_id",
             how="left"
         )["price"]
-        print(spending_items_df)
         for i, row in spending_items_df.iterrows():
             if utils.isNone(row["spending_item_id"]):
                 new_row = dict(row)
