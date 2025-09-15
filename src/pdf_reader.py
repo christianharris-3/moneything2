@@ -67,32 +67,38 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
         transaction_rows,
         [
             ("date", 0),
-            ("idk", 110),
+            ("type", 110),
             ("name", 135),
             ("paid_out", 350),
             ("paid_in", 440),
             ("balance", 510)
         ]
     )
-    table_df = table_df[table_df["name"] != "INTERNET TRANSFER"].reset_index(drop=True)
-    top_rows = table_df.iloc[::2].reset_index(drop=True)
-    bottom_rows = table_df.iloc[1::2].reset_index(drop=True)
-    top_rows["description"] = bottom_rows["name"]
-    top_rows[["paid_out", "paid_in", "balance"]] = bottom_rows[
-        ["paid_out", "paid_in", "balance"]
-    ]
-    top_rows["date"] = top_rows["date"].replace("", np.nan).ffill()
-    top_rows["date"] = top_rows["date"].apply(utils.string_to_date)
-
-    for i, row in top_rows.iterrows():
-        if row["paid_out"] == "":
-            top_rows.loc[i, "money"] = float(row["paid_in"])
-            top_rows.loc[i, "is_income"] = True
+    combined_df = pd.DataFrame(columns=table_df.columns)
+    for i, row in table_df.iterrows():
+        if row["type"] != "":
+            combined_df.loc[len(combined_df)] = row.copy()
         else:
-            top_rows.loc[i, "money"] = float(row["paid_out"])
-            top_rows.loc[i, "is_income"] = False
+            combined_df.loc[len(combined_df)-1, "description"] = row["name"]
+            combined_df.loc[len(combined_df)-1,
+                ["paid_out", "paid_in", "balance"]
+            ] = row[
+                ["paid_out", "paid_in", "balance"]
+            ]
 
-    transaction_df = top_rows.rename({
+
+    combined_df["date"] = combined_df["date"].replace("", np.nan).ffill()
+    combined_df["date"] = combined_df["date"].apply(utils.string_to_date)
+
+    for i, row in combined_df.iterrows():
+        if row["paid_out"] == "":
+            combined_df.loc[i, "money"] = float(row["paid_in"].replace(",", ""))
+            combined_df.loc[i, "is_income"] = True
+        else:
+            combined_df.loc[i, "money"] = float(row["paid_out"].replace(",", ""))
+            combined_df.loc[i, "is_income"] = False
+
+    transaction_df = combined_df.rename({
         "name": "vendor",
     })[["date", "name", "description", "money", "is_income"]]
 
@@ -108,11 +114,25 @@ def store_transactions_df(transactions_df, money_store=None):
         adding.set_override_money(row["money"])
         adding.set_is_income(row["is_income"])
         adding.set_money_store_used(money_store)
-        adding.add_transaction_to_db()
+
+        same_transactions = db_manager.transactions.get_filtered_df(
+            ["date", "vendor_name", "description", "override_money", "is_income"],
+            [
+                utils.date_to_string(row["date"]),
+                row["name"],
+                row["description"],
+                row["money"],
+                row["is_income"]
+            ]
+        )
+        if len(same_transactions) == 0:
+            adding.add_transaction_to_db()
 
 
 if __name__ == "__main__":
     test_path = "C:\\Users\\chris\\Downloads\\2025-06-20_Statement.pdf"
+    test_path = "C:\\Users\\chris\\my stuff\\bank statements\\2025-05-20_Statement.pdf"
     pdf_pages = extract_pdf_text(test_path)
     df = extract_hsbc_statement(pdf_pages)
+
     store_transactions_df(df)

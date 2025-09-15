@@ -81,7 +81,7 @@ class DatabaseTable:
             return filtered.iloc[0][self.COLUMNS[0]]
 
     def get_filtered_df(self, column, value):
-        return self.db_data[self.db_data[column] == value]
+        return utils.filter_df(self.db_data, column, value)
 
     def save_row_changes(self, original_row, updated_row, db):
         if not DatabaseTable.row_equals(original_row, updated_row):

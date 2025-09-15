@@ -28,6 +28,13 @@ def get_row_differences(original_row, updated_row):
                 differences[column] = updated_row[column]
     return differences
 
+def filter_df(df, column, value):
+    if isinstance(column, list):
+        for i in range(len(column)):
+            df = df[(df[column[i]] == value[i]) | (pd.isna(df[column[i]]) & pd.isna(value[i]))]
+        return df
+    return df[(df[column] == value) | (pd.isna(df[column]) & pd.isna(value))]
+
 
 def make_display_inner_joins(*args) -> list[dict]:
     """
