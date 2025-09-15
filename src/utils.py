@@ -35,6 +35,15 @@ def filter_df(df, column, value):
         return df
     return df[(df[column] == value) | (pd.isna(df[column]) & pd.isna(value))]
 
+def double_run():
+    if "has_rerun" not in st.session_state:
+        st.session_state["has_rerun"] = False
+
+    if not st.session_state["has_rerun"]:
+        st.session_state["has_rerun"] = True
+        st.rerun()
+    else:
+        st.session_state["has_rerun"] = False
 
 def make_display_inner_joins(*args) -> list[dict]:
     """
