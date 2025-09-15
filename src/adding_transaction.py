@@ -174,6 +174,11 @@ class AddingTransaction:
                         "name": self.vendor_name,
                     }
                 )
+                self.db_manager.vendors.db_data.loc[
+                    len(self.db_manager.vendors.db_data)] = {
+                    "vendor_id": vendor_id,
+                    "name": self.vendor_name
+                }
 
         ## Add to shop locations
         if self.shop_location is None:
@@ -192,6 +197,12 @@ class AddingTransaction:
                         "shop_location": self.shop_location,
                     }
                 )
+                self.db_manager.shop_locations.db_data.loc[
+                    len(self.db_manager.shop_locations.db_data)] = {
+                    "shop_location_id": shop_location_id,
+                    "vendor_id": vendor_id,
+                    "shop_location": self.shop_location,
+                }
 
         ## Add to Transactions
         transaction_data = {

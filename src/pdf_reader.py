@@ -45,10 +45,11 @@ def extract_table(data: list[list[dict]], columns: list[tuple[str, int]]) -> pd.
             for column, words in new_row.items()
         })
 
-    return pd.DataFrame(df_data)
+    return pd.DataFrame(df_data, columns = [col[0] for col in columns])
 
 def extract_hsbc_statement(pages: list[list[list[dict]]]):
     transaction_rows = []
+    initial_balance_text = None
     for page in pages:
         # print(" ------------------ NEW PAGE")
         at_transactions = False
@@ -59,9 +60,10 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
                 at_transactions = False
             if at_transactions:
                 transaction_rows.append(line)
-                # print(text, line)
             if "BALANCEBROUGHTFORWARD" in text:
                 at_transactions = True
+                if initial_balance_text == None:
+                    initial_balance_text = text
 
     table_df = extract_table(
         transaction_rows,
@@ -74,12 +76,15 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
             ("balance", 510)
         ]
     )
-    combined_df = pd.DataFrame(columns=table_df.columns)
+    combined_df = pd.DataFrame(columns=list(table_df.columns)+["description", "money", "is_income"])
     for i, row in table_df.iterrows():
         if row["type"] != "":
             combined_df.loc[len(combined_df)] = row.copy()
         else:
-            combined_df.loc[len(combined_df)-1, "description"] = row["name"]
+            try:
+                combined_df.loc[len(combined_df)-1, "description"] += " "+row["name"]
+            except (KeyError, TypeError):
+                combined_df.loc[len(combined_df) - 1, "description"] = row["name"]
             combined_df.loc[len(combined_df)-1,
                 ["paid_out", "paid_in", "balance"]
             ] = row[
@@ -102,10 +107,22 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
         "name": "vendor",
     })[["date", "name", "description", "money", "is_income"]]
 
-    return transaction_df
+    if initial_balance_text is not None:
+        split_text = initial_balance_text.split()
+        date_str = split_text[0]+" "+split_text[1]+" "+split_text[2]
+        balance_str = split_text[-1]
+        snapshot_info = {
+            "date": utils.string_to_date(date_str),
+            "balance": float(balance_str.replace(",", ""))
+        }
+    else:
+        snapshot_info = None
 
-def store_transactions_df(transactions_df, money_store=None):
-    db_manager = DatabaseManager()
+    return transaction_df, snapshot_info
+
+def store_transactions_df(transactions_df, snapshot_info, db_manager=None, money_store=None):
+    if db_manager is None:
+        db_manager = DatabaseManager()
     for i, row in transactions_df.iterrows():
         adding = AddingTransaction({}, db_manager)
         adding.set_spending_date(row["date"])
@@ -128,11 +145,30 @@ def store_transactions_df(transactions_df, money_store=None):
         if len(same_transactions) == 0:
             adding.add_transaction_to_db()
 
+    if snapshot_info is not None:
+        adding = AddingTransaction({}, db_manager)
+        adding.set_money_store_used(money_store)
+        db_manager.db.create_row(
+            db_manager.store_snapshots.TABLE,
+            {
+                "money_store_id": adding.money_store_id,
+                "snapshot_date": utils.date_to_string(snapshot_info["date"]),
+                "money_stored": snapshot_info["balance"]
+            }
+        )
+
+def upload_pdf(file, db_manager, money_store=None):
+    statement_pages = extract_pdf_text(file)
+    transactions_df, initial_balance = extract_hsbc_statement(statement_pages)
+
+    store_transactions_df(transactions_df, initial_balance, db_manager, money_store)
+
+
 
 if __name__ == "__main__":
     test_path = "C:\\Users\\chris\\Downloads\\2025-06-20_Statement.pdf"
-    test_path = "C:\\Users\\chris\\my stuff\\bank statements\\2025-05-20_Statement.pdf"
+    test_path = "C:\\Users\\chris\\my stuff\\bank statements\\2025-07-20_Statement.pdf"
     pdf_pages = extract_pdf_text(test_path)
-    df = extract_hsbc_statement(pdf_pages)
+    df, initial_balance = extract_hsbc_statement(pdf_pages)
 
     store_transactions_df(df)
