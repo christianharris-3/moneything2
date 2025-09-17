@@ -176,7 +176,8 @@ class SQLDatabase:
                 name TEXT,
                 price DECIMAL,
                 vendor_id INTEGER,
-                category_id INTEGER
+                category_id INTEGER,
+                description TEXT
             );
             """
         )

@@ -106,14 +106,21 @@ def transaction_input_tab(db_manager):
                 click_button("days")
 
         else:
-            for date in transactions_info:
+            transactions_info_list = list(transactions_info.items())
+            if state["depth"] == "years":
+                transactions_info_list.sort(key=lambda x: x[0])
+            elif state["depth"] == "months":
+                transactions_info_list.sort(key=lambda x: utils.string_to_date(x[0].split()[0]))
+            elif state["depth"] == "days":
+                transactions_info_list.sort(key=lambda x: x[0])
+            for date, info_dict in transactions_info_list:
                 st.button(
-                    f"{date}   ->  Income: £{transactions_info[date]['income']:.2f}   Spending: £{transactions_info[date]['spending']:.2f}",
+                    f"{date}   ->  Income: £{info_dict['income']:.2f}   Spending: £{info_dict['spending']:.2f}",
                     use_container_width=True,
                     on_click=click_button,
                     args=(
                         move_depth(state["depth"], 1),
-                        transactions_info[date]["timestamp"])
+                        info_dict["timestamp"])
                 )
 
 

@@ -5,10 +5,11 @@ class Products(DatabaseTable):
     TABLE = "Products"
     COLUMNS = [
         "product_id",
-         "name",
-         "price",
-         "vendor_id",
-         "category_id"
+        "name",
+        "price",
+        "vendor_id",
+        "category_id",
+        "description"
     ]
     DISPLAY_DF_RENAMED = {
         "product_id": "ID",
@@ -16,6 +17,7 @@ class Products(DatabaseTable):
         "price": "Price",
         "category_string": "Category",
         "shop_name": "Shop",
+        "description": "Description"
     }
 
     def __init__(self, select_call, vendors, categories):
