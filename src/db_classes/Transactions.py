@@ -44,3 +44,13 @@ class Transactions(DatabaseTable):
         renamed_df["time"] = renamed_df["time"].apply(utils.conform_time_string)
 
         return renamed_df
+
+    def get_df_matching_search_term(self, search_term):
+        def row_matches_search_term(row, search_term):
+            return any(row.apply(
+                lambda value: str(search_term).lower() in str(value).lower()
+            ))
+        return self.db_data[self.db_data.apply(
+            lambda row: row_matches_search_term(row, search_term),
+            axis=1
+        )]

@@ -5,7 +5,7 @@ from collections import defaultdict
 import datetime
 
 
-
+ITEMS_PER_PAGE = 15
 
 def transaction_input_tab(db_manager):
 
@@ -15,114 +15,66 @@ def transaction_input_tab(db_manager):
         st.markdown("## Existing Transactions")
 
         if "transaction_viewer_date" not in st.session_state:
-            st.session_state["transaction_viewer_date"] = {"depth": "years", "timestamp": None, "transaction_id": None}
-
-        def click_button(new_depth, new_timestamp=None, transaction_id=None):
-            st.session_state["transaction_viewer_date"]["depth"] = new_depth
-            if new_timestamp is not None:
-                st.session_state["transaction_viewer_date"]["timestamp"] = new_timestamp
-            if transaction_id is not None:
-                st.session_state["transaction_viewer_date"]["transaction_id"] = transaction_id
-
-        def move_depth(depth, diff=0):
-            next_depths = [
-                "years",
-                "months",
-                "days",
-                "transactions",
-                "specific"
-            ]
-            return next_depths[
-                (next_depths.index(depth)+diff)%len(next_depths)
-            ]
+            st.session_state["transaction_viewer_date"] = {
+                "depth": "years",
+                "timestamp": None,
+                "transaction_id": None,
+                "search_mode": False,
+                "search_term": None,
+                "page": 1
+            }
 
         state = st.session_state["transaction_viewer_date"]
-        current, increase  = st.columns([1,1])
-        increase.button(
+        ui_section, back_button, mode_toggle  = st.columns([1,1,0.2])
+
+        back_button.button(
             "Previous", icon="⬆️",
             use_container_width=True,
-            disabled=state["depth"]=="years",
-            on_click=click_button,
+            disabled=(state["depth"] == "years" and not state["search_mode"]) or (state["depth"] == "transactions" and state["search_mode"]),
+            on_click=click_ui_nav_button,
             args=(move_depth(state["depth"], -1),)
         )
-        if state["depth"] == "years":
-            current.write(f"### Years")
-        elif state["depth"] == "months":
-            current.write(f"### Months of {state['timestamp'].year}")
-        elif state["depth"] == "days":
-            current.write(f"### Days in {state['timestamp'].strftime('%b %Y')}")
-        elif state["depth"] == "transactions":
-            current.write(f"### {state['timestamp'].strftime('%a %d %b %y')}")
-        elif state["depth"] == "specific":
-            current.write(f"### Transaction ID {state['transaction_id']}")
+
+        if state["search_mode"]:
+
+            state["search_term"] = ui_section.text_input(
+                "Search",
+                label_visibility="collapsed",
+                icon="🔎",
+                placeholder="Search Transactions"
+            )
+
+            if mode_toggle.button("📅"):
+                state["search_mode"] = False
+                state["depth"] = "years"
+        else:
+            if state["depth"] == "years":
+                ui_section.write(f"### Years")
+            elif state["depth"] == "months":
+                ui_section.write(f"### Months of {state['timestamp'].year}")
+            elif state["depth"] == "days":
+                ui_section.write(f"### Days in {state['timestamp'].strftime('%b %Y')}")
+            elif state["depth"] == "transactions":
+                ui_section.write(f"### {state['timestamp'].strftime('%a %d %b %y')}")
+            elif state["depth"] == "specific":
+                ui_section.write(f"### Transaction ID {state['transaction_id']}")
+
+            if mode_toggle.button("🔎"):
+                state["search_mode"] = True
+                state["depth"] = "transactions"
 
         # st.divider()
-        transactions_info = get_transactions_info(db_manager, state)
-
-        if state["depth"] == "transactions":
-            for id_ in transactions_info:
-                st.button(
-                    transactions_info[id_],
-                    use_container_width=True,
-                    on_click=click_button,
-                    args=("specific", None, id_),
-                    key=f"transaction_button_{id_}"
+        if state["search_mode"]:
+            if state["depth"] == "transactions":
+                list_searched_transactions(db_manager, state)
+            elif state["depth"] == "specific":
+                create_view_transaction_ui(
+                    db_manager,
+                    db_manager.transactions.get_db_row(state["transaction_id"])
                 )
-        elif state["depth"] == "specific":
-            st.metric("Vendor", transactions_info["vendor"])
-            if not utils.isNone(transactions_info["shop_location"]):
-                st.metric("Location", transactions_info["shop_location"])
-            cols = st.columns([1,1.5])
-            cols[0].metric("Money", transactions_info["money_string"])
-            cols[1].metric("Money Store", transactions_info["money_store"])
-            if not utils.isNone(transactions_info["category_string"]):
-                st.metric("Category", transactions_info["category_string"])
-            cols = st.columns([1.2,1])
-            cols[0].metric("Date", transactions_info["date"])
-            if not utils.isNone(transactions_info["time"]):
-                cols[1].metric("Time", transactions_info["time"])
-
-            st.markdown("#### Description")
-            st.markdown(transactions_info["description"])
-
-            with st.expander("Items"):
-                st.dataframe(
-                    db_manager.spending_items.get_filtered_df(
-                        "transaction_id", state["transaction_id"]
-                    ).rename({
-                        "product_name": "Name",
-                        "display_price": "Price",
-                        "num_purchased": "Num Purchased"
-                    }, axis=1)[["Name", "Price", "Num Purchased"]],
-                    hide_index=True
-                )
-
-
-            cols = st.columns([1,1])
-            if cols[0].button("Edit", use_container_width=True, icon="✏️"):
-                load_transaction_input(db_manager, state["transaction_id"])
-            if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
-                delete_transaction(db_manager, state["transaction_id"])
-                click_button("days")
 
         else:
-            transactions_info_list = list(transactions_info.items())
-            if state["depth"] == "years":
-                transactions_info_list.sort(key=lambda x: x[0])
-            elif state["depth"] == "months":
-                transactions_info_list.sort(key=lambda x: utils.string_to_date(x[0].split()[0]))
-            elif state["depth"] == "days":
-                transactions_info_list.sort(key=lambda x: x[0])
-            for date, info_dict in transactions_info_list:
-                st.button(
-                    f"{date}   ->  Income: £{info_dict['income']:.2f}   Spending: £{info_dict['spending']:.2f}",
-                    use_container_width=True,
-                    on_click=click_button,
-                    args=(
-                        move_depth(state["depth"], 1),
-                        info_dict["timestamp"])
-                )
-
+            transactions_listing_ui(db_manager, state)
 
     with edit_column:
         if st.session_state.get("delete_transaction_inputs", False):
@@ -233,6 +185,134 @@ def transaction_input_tab(db_manager):
             st.session_state["delete_transaction_inputs"] = True
             st.toast("Transaction Saved!")
             st.rerun()
+
+def click_ui_nav_button(new_depth, new_timestamp=None, transaction_id=None):
+    st.session_state["transaction_viewer_date"]["depth"] = new_depth
+    if new_timestamp is not None:
+        st.session_state["transaction_viewer_date"]["timestamp"] = new_timestamp
+    if transaction_id is not None:
+        st.session_state["transaction_viewer_date"]["transaction_id"] = transaction_id
+
+def move_depth(depth, diff=0):
+    next_depths = [
+        "years",
+        "months",
+        "days",
+        "transactions",
+        "specific"
+    ]
+    return next_depths[
+        (next_depths.index(depth)+diff)%len(next_depths)
+    ]
+
+def transactions_listing_ui(db_manager, state):
+    transactions_info = get_transactions_info(db_manager, state)
+    if state["depth"] == "transactions":
+        for id_ in transactions_info:
+            st.button(
+                transactions_info[id_],
+                use_container_width=True,
+                on_click=click_ui_nav_button,
+                args=("specific", None, id_),
+                key=f"transaction_button_{id_}"
+            )
+    elif state["depth"] == "specific":
+        create_view_transaction_ui(db_manager, transactions_info)
+
+    else:
+        transactions_info_list = list(transactions_info.items())
+        if state["depth"] == "years":
+            transactions_info_list.sort(key=lambda x: x[0])
+        elif state["depth"] == "months":
+            transactions_info_list.sort(key=lambda x: utils.string_to_date(x[0].split()[0]))
+        elif state["depth"] == "days":
+            transactions_info_list.sort(key=lambda x: x[0])
+        for date, info_dict in transactions_info_list:
+            st.button(
+                f"{date}   ->  Income: £{info_dict['income']:.2f}   Spending: £{info_dict['spending']:.2f}",
+                use_container_width=True,
+                on_click=click_ui_nav_button,
+                args=(
+                    move_depth(state["depth"], 1),
+                    info_dict["timestamp"])
+            )
+
+
+def create_view_transaction_ui(db_manager, transaction_row):
+    st.metric("Vendor", transaction_row["vendor_name"])
+    if not utils.isNone(transaction_row["shop_location"]):
+        st.metric("Location", transaction_row["shop_location"])
+    cols = st.columns([1, 1.5])
+    cols[0].metric("Money", f"{'+' if transaction_row['is_income'] else '-'}£{find_transaction_value(db_manager, transaction_row):.2f}")
+    cols[1].metric("Money Store", transaction_row["money_store"])
+    if not utils.isNone(transaction_row["category_string"]):
+        st.metric("Category", transaction_row["category_string"])
+    cols = st.columns([1.2, 1])
+    cols[0].metric("Date", transaction_row["date"])
+    if not utils.isNone(transaction_row["time"]):
+        cols[1].metric("Time", transaction_row["time"])
+    st.markdown("#### Description")
+    st.markdown(transaction_row["description"])
+    with st.expander("Items"):
+        st.dataframe(
+            db_manager.spending_items.get_filtered_df(
+                "transaction_id", transaction_row["transaction_id"]
+            ).rename({
+                "product_name": "Name",
+                "display_price": "Price",
+                "num_purchased": "Num Purchased"
+            }, axis=1)[["Name", "Price", "Num Purchased"]],
+            hide_index=True
+        )
+    cols = st.columns([1, 1])
+    if cols[0].button("Edit", use_container_width=True, icon="✏️"):
+        load_transaction_input(db_manager, transaction_row["transaction_id"])
+    if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
+        delete_transaction(db_manager, transaction_row["transaction_id"])
+        click_ui_nav_button("days")
+
+
+def list_searched_transactions(db_manager, state):
+    filtered_df = db_manager.transactions.get_df_matching_search_term(state["search_term"])
+
+    buttons_container = st.container()
+    pages_manager_ui(state, len(filtered_df))
+
+    filtered_df = filtered_df.iloc[ITEMS_PER_PAGE*(state["page"]-1):ITEMS_PER_PAGE*state["page"]]
+
+    for i,row in filtered_df.iterrows():
+        buttons_container.button(
+            f"{row['date']} -> {row['vendor_name']} {'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row)}",
+            use_container_width=True,
+            on_click=click_ui_nav_button,
+            args=("specific", None, row["transaction_id"]),
+            key=f"transaction_button_{row['transaction_id']}"
+        )
+
+def pages_manager_ui(state, num_items):
+    total_pages = num_items//ITEMS_PER_PAGE+1
+
+    if state["page"]>total_pages:
+        state["page"] = 1
+
+    left, middle, right = st.columns([1,1.6,1], width=200, vertical_alignment="center")
+
+    def move_page(state, change):
+        state["page"]+=change
+
+    left.button(
+        "◀️",
+        disabled=state["page"]<=1,
+        on_click=move_page,
+        args=(state, -1)
+    )
+    right.button(
+        "▶️",
+        disabled=state["page"]>=total_pages,
+        on_click=move_page,
+        args=(state, 1)
+    )
+    middle.markdown(f"Page {state['page']}/{total_pages}")
 
 def clear_transaction_input():
     del st.session_state["adding_spending_df"]
@@ -347,16 +427,7 @@ def get_transactions_info(db_manager, state):
     elif state["depth"] == "specific":
         row = db_manager.transactions.get_db_row(state["transaction_id"])
 
-        return {
-            "date": row["date"],
-            "time": row["time"],
-            "vendor": row["vendor_name"],
-            "shop_location": row["shop_location"],
-            "money_string": f"{'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row):.2f}",
-            "money_store": row["money_store"],
-            "category_string": row["category_string"],
-            "description": row["description"]
-        }
+        return row
     return output
 
 def summarise_transactions(db_manager, transactions_df, timestamp=None):
