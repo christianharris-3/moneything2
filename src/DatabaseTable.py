@@ -75,7 +75,7 @@ class DatabaseTable:
 
     def get_id_from_value(self, column, value):
         filtered = self.get_filtered_df(column, value)
-        if len(filtered) is None:
+        if len(filtered) < 1:
             return None
         else:
             return filtered.iloc[0][self.COLUMNS[0]]

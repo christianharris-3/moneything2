@@ -4,6 +4,10 @@ from src.add_to_db import add_money_store, add_internal_transfer
 from src.money_tracker import build_money_ui
 import src.utils as utils
 
+
+import sys
+print("version", sys.version)
+
 st.set_page_config(page_title="Home - Money Thing", page_icon="📈",layout="wide")
 
 
@@ -16,7 +20,6 @@ st.set_page_config(page_title="Home - Money Thing", page_icon="📈",layout="wid
 
 # TODO: add method to convert/merge/add locations to vendors and locations
 # TODO: add method to change transactions into internal transfers
-# TODO: add search feature to transactions
 
 if __name__ == "__main__":
     db_manager = DatabaseManager()

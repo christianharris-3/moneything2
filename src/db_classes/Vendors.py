@@ -23,3 +23,12 @@ class Vendors(DatabaseTable):
                 for id_ in self.db_data["vendor_id"]
             ])
         ))
+
+    def rename_vendors(self, db, current_id, new_name):
+        if current_id is not None:
+            db.update_row(
+                self.TABLE,
+                {"name": new_name},
+                "vendor_id",
+                current_id
+            )

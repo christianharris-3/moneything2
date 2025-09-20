@@ -25,7 +25,7 @@ def transaction_input_tab(db_manager):
             }
 
         state = st.session_state["transaction_viewer_date"]
-        ui_section, back_button, mode_toggle  = st.columns([1,1,0.2])
+        ui_section, back_button, mode_toggle  = st.columns([1.3,0.7,0.25])
 
         back_button.button(
             "Previous", icon="⬆️",
