@@ -20,6 +20,7 @@ st.set_page_config(page_title="Home - Money Thing", page_icon="📈",layout="wid
 
 # TODO: add method to convert/merge/add locations to vendors and locations
 # TODO: add method to change transactions into internal transfers
+# TODO: add pages to all transactions lists
 
 if __name__ == "__main__":
     db_manager = DatabaseManager()

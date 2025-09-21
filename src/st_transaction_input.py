@@ -36,7 +36,6 @@ def transaction_input_tab(db_manager):
         )
 
         if state["search_mode"]:
-
             state["search_term"] = ui_section.text_input(
                 "Search",
                 label_visibility="collapsed",
@@ -77,114 +76,109 @@ def transaction_input_tab(db_manager):
             transactions_listing_ui(db_manager, state)
 
     with edit_column:
-        if st.session_state.get("delete_transaction_inputs", False):
-            clear_transaction_input()
-            st.session_state["delete_transaction_inputs"] = False
+        transactions_edit_ui(db_manager)
 
-        editing_transaction_id = st.session_state.get("editing_transaction_id", -1)
-        title, clear_button = st.columns([0.8,0.2])
-        if editing_transaction_id == -1:
-            title.markdown("## Add Transaction")
-        else:
-            title.markdown(f"## Editing Transaction with id {editing_transaction_id}")
-        clear_button.write("")
-        clear_button.button("Clear", on_click=clear_transaction_input, use_container_width=True)
 
-        left_input, right_input = st.columns(2)
-        adding_spending = AddingTransaction(st.session_state, db_manager)
+def transactions_edit_ui(db_manager):
+    if st.session_state.get("delete_transaction_inputs", False):
+        clear_transaction_input()
+        st.session_state["delete_transaction_inputs"] = False
+    editing_transaction_id = st.session_state.get("editing_transaction_id", -1)
+    title, clear_button = st.columns([0.8, 0.2])
+    if editing_transaction_id == -1:
+        title.markdown("## Add Transaction")
+    else:
+        title.markdown(f"## Editing Transaction with id {editing_transaction_id}")
+    clear_button.write("")
+    clear_button.button("Clear", on_click=clear_transaction_input, use_container_width=True)
+    left_input, right_input = st.columns(2)
+    adding_spending = AddingTransaction(st.session_state, db_manager)
+    adding_spending.set_vendor_name(
+        left_input.selectbox(
+            "Vendor Name", db_manager.get_all_vendor_names(),
+            accept_new_options=True, index=None, key="vendor_input")
+    )
+    selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
+    adding_spending.set_shop_location(
+        right_input.selectbox(
+            "Location Name", selected_shop_locations,
+            accept_new_options=True, index=None, key="location_input")
+    )
+    adding_spending.set_override_money(
+        left_input.number_input("Money Transferred", value=None, key="money_input")
+    )
+    adding_spending.set_money_store_used(
+        right_input.selectbox(
+            "Money Store Used", db_manager.get_all_money_stores(),
+            index=None, key="money_store_input")
+    )
+    adding_spending.set_spending_date(
+        left_input.date_input("Spending Date", format="DD/MM/YYYY", key="date_input")
+    )
+    adding_spending.set_spending_time(
+        right_input.time_input("Spending Time", value=None, key="time_input")
+    )
+    adding_spending.set_spending_category(
+        left_input.selectbox(
+            "Spending Category", db_manager.get_all_categories(),
+            index=None, key="category_input")
+    )
+    adding_spending.set_is_income(
+        right_input.selectbox("Spending or Income", ["Spending", "Income"], key="is_income_input")
+    )
+    adding_spending.set_description(
+        st.text_input("Description", value=None, key="description_input")
+    )
+    if adding_spending.override_money is not None:
+        total_cost = adding_spending.override_money
+    else:
+        total_cost = 0
+    if not adding_spending.is_income:
+        st.markdown("## Items")
 
-        adding_spending.set_vendor_name(
-            left_input.selectbox(
-                "Vendor Name", db_manager.get_all_vendor_names(),
-                accept_new_options=True, index=None, key="vendor_input")
+        if "product_selection" not in st.session_state:
+            st.session_state["product_selection"] = None
+
+        selected_product = st.selectbox(
+            "Add Item",
+            options=db_manager.get_all_products(adding_spending.vendor_name),
+            accept_new_options=True, index=None, key="product_selection"
         )
-        selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
-        adding_spending.set_shop_location(
-            right_input.selectbox(
-                "Location Name", selected_shop_locations,
-                accept_new_options=True, index=None, key="location_input")
-        )
 
-        adding_spending.set_override_money(
-            left_input.number_input("Money Transferred", value=None, key="money_input")
-        )
+        def add_item_button_press(adding_spending_obj, selected_option):
+            adding_spending_obj.add_product(selected_option)
+            del st.session_state["product_selection"]
 
-        adding_spending.set_money_store_used(
-            right_input.selectbox(
-                "Money Store Used", db_manager.get_all_money_stores(),
-                index=None, key="money_store_input")
-        )
+        st.button("Add Item",
+                  on_click=lambda: add_item_button_press(adding_spending, selected_product))
 
-        adding_spending.set_spending_date(
-            left_input.date_input("Spending Date", format="DD/MM/YYYY", key="date_input")
-        )
-        adding_spending.set_spending_time(
-            right_input.time_input("Spending Time", value=None, key="time_input")
-        )
+        spending_display_df = adding_spending.to_display_df()
 
-        adding_spending.set_spending_category(
-            left_input.selectbox(
-                "Spending Category", db_manager.get_all_categories(),
-                index=None, key="category_input")
-        )
-
-        adding_spending.set_is_income(
-            right_input.selectbox("Spending or Income", ["Spending", "Income"], key="is_income_input")
-        )
-
-        adding_spending.set_description(
-            st.text_input("Description", value=None, key="description_input")
-        )
-
-        if adding_spending.override_money is not None:
-            total_cost = adding_spending.override_money
-        else:
-            total_cost = 0
-        if not adding_spending.is_income:
-            st.markdown("## Items")
-
-            if "product_selection" not in st.session_state:
-                st.session_state["product_selection"] = None
-
-            selected_product = st.selectbox(
-                "Add Item",
-                options=db_manager.get_all_products(adding_spending.vendor_name),
-                accept_new_options=True, index=None, key="product_selection"
+        st.session_state["adding_spending_df"] = adding_spending.from_display_df(
+            utils.data_editor(
+                spending_display_df,
+                {
+                    "ID": {"type": "number", "editable": False},
+                    "Price Per": {"type": "number", "format": "£%.2f"},
+                }
             )
+        )
 
-            def add_item_button_press(adding_spending_obj, selected_option):
-                adding_spending_obj.add_product(selected_option)
-                del st.session_state["product_selection"]
+        total_cost = sum(filter(
+            lambda num: not utils.isNone(num),
+            spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
+        ))
+        st.divider()
+        st.markdown(f"Save Transaction of spending £{total_cost:.2f}")
+    else:
+        st.divider()
+        st.markdown(f"Save Income of £{total_cost:.2f}")
+    if st.button("Save Transaction"):
+        adding_spending.add_transaction_to_db()
+        st.session_state["delete_transaction_inputs"] = True
+        st.toast("Transaction Saved!")
+        st.rerun()
 
-            st.button("Add Item",
-                      on_click=lambda: add_item_button_press(adding_spending, selected_product))
-
-            spending_display_df = adding_spending.to_display_df()
-
-            st.session_state["adding_spending_df"] = adding_spending.from_display_df(
-                utils.data_editor(
-                    spending_display_df,
-                    {
-                        "ID": {"type": "number", "editable": False},
-                        "Price Per": {"type": "number", "format": "£%.2f"},
-                    }
-                )
-            )
-
-            total_cost = sum(filter(
-                lambda num: not utils.isNone(num),
-                spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
-            ))
-            st.divider()
-            st.markdown(f"Save Transaction of spending £{total_cost:.2f}")
-        else:
-            st.divider()
-            st.markdown(f"Save Income of £{total_cost:.2f}")
-        if st.button("Save Transaction"):
-            adding_spending.add_transaction_to_db()
-            st.session_state["delete_transaction_inputs"] = True
-            st.toast("Transaction Saved!")
-            st.rerun()
 
 def click_ui_nav_button(new_depth, new_timestamp=None, transaction_id=None):
     st.session_state["transaction_viewer_date"]["depth"] = new_depth
@@ -208,14 +202,29 @@ def move_depth(depth, diff=0):
 def transactions_listing_ui(db_manager, state):
     transactions_info = get_transactions_info(db_manager, state)
     if state["depth"] == "transactions":
+        selected_transactions = []
         for id_ in transactions_info:
-            st.button(
+            view_button, select_checkbox = st.columns([0.9, 0.1])
+            view_button.button(
                 transactions_info[id_],
                 use_container_width=True,
                 on_click=click_ui_nav_button,
                 args=("specific", None, id_),
                 key=f"transaction_button_{id_}"
             )
+            if select_checkbox.checkbox(
+                "merge transactions",
+                label_visibility="collapsed",
+                key=f"select_transaction_checkbox_{id_}",
+                width="stretch"
+            ):
+                selected_transactions.append(id_)
+        if len(selected_transactions) != 2:
+            st.markdown("Select 2 transactions to convert to Internal Transfer")
+        else:
+            if st.button("Convert to Internal Transfer"):
+                convert_to_internal_transfer(db_manager, selected_transactions)
+
     elif state["depth"] == "specific":
         create_view_transaction_ui(db_manager, transactions_info)
 
@@ -454,3 +463,52 @@ def find_transaction_value(db_manager, df_row) -> float:
 def delete_transaction(db_manager, transaction_id):
     db_manager.db.delete("Transactions", "transaction_id", transaction_id)
     db_manager.db.delete("SpendingItems", "transaction_id", transaction_id)
+
+def convert_to_internal_transfer(db_manager, transaction_ids):
+    row1 = db_manager.transactions.get_db_row(transaction_ids[0])
+    row2 = db_manager.transactions.get_db_row(transaction_ids[1])
+
+    if row1["override_money"] == row2["override_money"] and (
+        row1["is_income"] != row2["is_income"]) and (
+        row1["money_store_id"] != row2["money_store_id"]
+    ):
+        date = row1["date"] or row2["date"]
+        time = row1["time"] or row2["time"]
+        money = row1["override_money"]
+        if row1["is_income"]:
+            source_store_id = row1["money_store_id"]
+            target_store_id = row2["money_store_id"]
+        else:
+            target_store_id = row1["money_store_id"]
+            source_store_id = row2["money_store_id"]
+
+        # create internal transfer
+        db_manager.db.create_row(
+            db_manager.internal_transfers.TABLE,
+            {
+                "source_store_id": source_store_id,
+                "target_store_id": target_store_id,
+                "date": date,
+                "time": time,
+                "money_transferred": money
+            }
+        )
+
+        # delete previous transactions
+        db_manager.db.delete(
+            db_manager.transactions.TABLE,
+            "transaction_id",
+            transaction_ids[0]
+        )
+        db_manager.db.delete(
+            db_manager.transactions.TABLE,
+            "transaction_id",
+            transaction_ids[1]
+        )
+        st.markdown("Transactions Converted to Internal Transfer!")
+    else:
+        st.markdown("Selected transactions can't be converted")
+
+
+
+

@@ -28,6 +28,8 @@ class DatabaseManager:
             self.money_stores, self.vendors, self.shop_locations, self.categories)
         self.spending_items = self.db.load_table(SpendingItems, self.products)
 
+    def reconnect_db(self):
+        self.db = SQLDatabase()
 
     def save_df_changes(self, obj, edited_df) -> bool:
         return obj.save_changes(

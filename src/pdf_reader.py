@@ -77,8 +77,6 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
             ("balance", 510)
         ]
     )
-    print("------------- table df")
-    print(table_df)
     combined_df = pd.DataFrame(columns=list(table_df.columns)+["description", "money", "is_income"])
     for i, row in table_df.iterrows():
         if row["type"] != "":
@@ -109,8 +107,6 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
     transaction_df = combined_df.rename({
         "name": "vendor",
     })[["date", "name", "description", "money", "is_income"]]
-    print("Loading transactions")
-    print(transaction_df)
 
     snapshot_info = None
     if initial_balance_text is not None:
