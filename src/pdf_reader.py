@@ -1,6 +1,7 @@
 import pdfplumber
 import pandas as pd
 import numpy as np
+
 import src.utils as utils
 from src.db_manager import DatabaseManager
 from src.adding_transaction import AddingTransaction
@@ -14,7 +15,7 @@ def extract_pdf_text(path) -> list[list[list[dict]]]:
             page_info = []
             current_y_pos = -1
             for word in word_dict:
-                if int(word["top"]) != current_y_pos:
+                if int(word["top"]) < current_y_pos-5 or int(word["top"]) > current_y_pos+5:
                     page_info.append([])
                     current_y_pos = int(word["top"])
                 page_info[-1].append({
@@ -62,7 +63,7 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
                 transaction_rows.append(line)
             if "BALANCEBROUGHTFORWARD" in text:
                 at_transactions = True
-                if initial_balance_text == None:
+                if initial_balance_text is None:
                     initial_balance_text = text
 
     table_df = extract_table(
@@ -76,6 +77,8 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
             ("balance", 510)
         ]
     )
+    print("------------- table df")
+    print(table_df)
     combined_df = pd.DataFrame(columns=list(table_df.columns)+["description", "money", "is_income"])
     for i, row in table_df.iterrows():
         if row["type"] != "":
@@ -96,27 +99,31 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
     combined_df["date"] = combined_df["date"].apply(utils.string_to_date)
 
     for i, row in combined_df.iterrows():
-        if row["paid_out"] == "":
-            combined_df.loc[i, "money"] = float(row["paid_in"].replace(",", ""))
+        if row["paid_in"] != "":
+            combined_df.loc[i, "money"] = float(str(row["paid_in"]).replace(",", ""))
             combined_df.loc[i, "is_income"] = True
-        else:
-            combined_df.loc[i, "money"] = float(row["paid_out"].replace(",", ""))
+        elif row["paid_out"] != "":
+            combined_df.loc[i, "money"] = float(str(row["paid_out"]).replace(",", ""))
             combined_df.loc[i, "is_income"] = False
 
     transaction_df = combined_df.rename({
         "name": "vendor",
     })[["date", "name", "description", "money", "is_income"]]
+    print("Loading transactions")
+    print(transaction_df)
 
+    snapshot_info = None
     if initial_balance_text is not None:
         split_text = initial_balance_text.split()
-        date_str = split_text[0]+" "+split_text[1]+" "+split_text[2]
-        balance_str = split_text[-1]
-        snapshot_info = {
-            "date": utils.string_to_date(date_str),
-            "balance": float(balance_str.replace(",", ""))
-        }
-    else:
-        snapshot_info = None
+        try:
+            date_str = split_text[0]+" "+split_text[1]+" "+split_text[2]
+            balance_str = split_text[-1]
+            snapshot_info = {
+                "date": utils.string_to_date(date_str),
+                "balance": float(balance_str.replace(",", ""))
+            }
+        except:
+            pass
 
     return transaction_df, snapshot_info
 

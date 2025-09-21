@@ -1,6 +1,7 @@
 import sqlite3 as sql
 import math
 import datetime
+import pandas as pd
 
 class SQLDatabase:
     def __init__(self):
@@ -166,6 +167,35 @@ class SQLDatabase:
             self.connection.commit()
 
         return return_val
+    def run_user_sql(self, sql_statement: str):
+        if sql_statement == "" or sql_statement is None:
+            return "Please enter an SQL query", False
+        if sql_statement.split()[0] not in ["UPDATE", "SELECT", "DELETE"]:
+            return "Error: Statement must being with UPDATE, SELECT or DELETE", False
+
+        if "where" in sql_statement.lower():
+            sql_statement += " AND"
+        else:
+            sql_statement += " WHERE"
+        sql_statement += f" meta_data_id IN (SELECT meta_data_id FROM MetaData WHERE user_id={self.user_id} AND row_deleted=0)"
+
+        print("Executing User SQL:", sql_statement)
+        success = True
+        try:
+            output = self.cursor.execute(sql_statement)
+            if output.description is not None:
+                columns = [info[0] for info in output.description]
+                output = pd.DataFrame(
+                    output.fetchall(),
+                    columns=columns
+                )
+                output = output.drop("meta_data_id", axis=1)
+
+            self.connection.commit()
+        except Exception as e:
+            success = False
+            output = e
+        return output, success
 
     def create_tables(self):
         self.cursor.execute(

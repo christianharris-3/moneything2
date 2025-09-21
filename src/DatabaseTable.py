@@ -38,20 +38,25 @@ class DatabaseTable:
     def save_changes(self, updated_df, db):
         updated_df = updated_df[self.COLUMNS]
         primary_key = self.COLUMNS[0]
+        table_edited = False
 
         for i, updated_row in updated_df.iterrows():
             if utils.isNone(updated_row[primary_key]):
                 self.save_row_added(updated_row, db)
+                table_edited = True
             elif updated_row[primary_key] in self.db_data[self.COLUMNS][primary_key].values:
-                self.save_row_changes(
+                table_edited = self.save_row_changes(
                     self.get_db_row(updated_row[primary_key])[self.COLUMNS],
                     updated_row,
                     db
-                )
+                ) or table_edited
 
         for i, original_row in self.db_data[self.COLUMNS].iterrows():
             if original_row[primary_key] not in updated_df[primary_key].values:
                 self.save_row_remove(original_row[primary_key], db)
+                table_edited = True
+
+        return table_edited
 
     def save_row_remove(self, id_, db):
         self.db_data = self.db_data.drop(
@@ -83,7 +88,7 @@ class DatabaseTable:
     def get_filtered_df(self, column, value):
         return utils.filter_df(self.db_data, column, value)
 
-    def save_row_changes(self, original_row, updated_row, db):
+    def save_row_changes(self, original_row, updated_row, db) -> bool:
         if not DatabaseTable.row_equals(original_row, updated_row):
             db.update_row(
                 self.TABLE,
@@ -91,6 +96,8 @@ class DatabaseTable:
                 self.COLUMNS[0],
                 updated_row[self.COLUMNS[0]]
             )
+            return True
+        return False
 
     def list_all_in_column(self, column):
         return sorted(filter(
