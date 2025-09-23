@@ -1,0 +1,6 @@
+pandas~=2.3.1
+streamlit~=1.48.1
+streamlit-aggrid~=1.1.8.post1
+pdfplumber~=0.11.7
+numpy~=2.2.6
+easyocr~=1.7.2

@@ -22,7 +22,13 @@ st.set_page_config(page_title="Home - Money Thing", page_icon="📈",layout="wid
 # TODO: add method to change transactions into internal transfers
 # TODO: add pages to all transactions lists
 
+# TODO: host website, vercel.com
+
 if __name__ == "__main__":
+    # st.login()
+
+    # print("login is", st.user)
+
     db_manager = DatabaseManager()
 
     money_tab, data_tab = st.tabs(["Money Tracker", "View Data"])
