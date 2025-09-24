@@ -287,6 +287,9 @@ def list_searched_transactions(db_manager, state):
     buttons_container = st.container()
     pages_manager_ui(state, len(filtered_df))
 
+    filtered_df["datetime"] = filtered_df["date"].apply(utils.string_to_date)
+    filtered_df = filtered_df.sort_values("datetime", ascending=False)
+
     filtered_df = filtered_df.iloc[ITEMS_PER_PAGE*(state["page"]-1):ITEMS_PER_PAGE*state["page"]]
 
     for i,row in filtered_df.iterrows():

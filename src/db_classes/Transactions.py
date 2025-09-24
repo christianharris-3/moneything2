@@ -1,5 +1,6 @@
 from src.DatabaseTable import DatabaseTable
 import src.utils as utils
+import pandas as pd
 
 class Transactions(DatabaseTable):
     TABLE = "Transactions"
@@ -46,11 +47,43 @@ class Transactions(DatabaseTable):
         return renamed_df
 
     def get_df_matching_search_term(self, search_term):
+        def string_in_series(string, series):
+            if isinstance(series, pd.Series):
+                return series.apply(
+                    lambda value: str(string).lower().strip() in str(value).lower()
+                )
+            else:
+                return list(map(
+                    lambda value: str(string).lower().strip() in str(value).lower(),
+                    series
+                ))
+
         def row_matches_search_term(row, search_term):
-            return any(row.apply(
-                lambda value: str(search_term).lower() in str(value).lower()
-            ))
-        return self.db_data[self.db_data.apply(
-            lambda row: row_matches_search_term(row, search_term),
-            axis=1
-        )]
+            if utils.isNone(search_term):
+                return True
+            search_term = search_term.strip()
+            if search_term == "":
+                return True
+            if any(string_in_series(search_term, row)):
+                return True
+            if ":" in search_term:
+                column, term = search_term.split(":", 1)
+                if term == "":
+                    return True
+                bool_map = string_in_series(column, row.keys())
+                if any(bool_map):
+                    if any(string_in_series(term, row[bool_map])):
+                        return True
+            return False
+        bools = None
+        for term in search_term.split(";"):
+            bools_2 = self.db_data.apply(
+                lambda row: row_matches_search_term(row, term),
+                axis=1
+            )
+            if bools is None:
+                bools = bools_2
+            else:
+                bools = bools & bools_2
+
+        return self.db_data[bools]

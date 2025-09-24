@@ -21,6 +21,18 @@ st.set_page_config(
 
 # TODO: host website, vercel.com
 
+# TODO: default money store input
+#  fix transactions spending info to be correct, and add vendor to message
+#  reduce double refreshing when entering info
+
+# TODO: add change password, and user page
+#  fix side bar not making sense
+
+# TODO: when sorting by search, do most recent first
+#  search by column with format "name: cheese"
+
+# TODO: create logs for server
+
 if __name__ == "__main__":
     st_auth_ui()
 
