@@ -1,6 +1,10 @@
 import streamlit as st
+from src.sql_database import SQLDatabase
+import pandas as pd
+import bcrypt
 
 def st_auth_ui():
+    users_df = load_users()
     _, middle, _ = st.columns([0.4,0.3,0.4])
 
     if "auth_input" not in st.session_state:
@@ -9,28 +13,31 @@ def st_auth_ui():
     with middle.container(border=True):
 
         if st.session_state["auth_input"] == "login":
-            login_ui()
+            login_ui(users_df)
         else:
-            register_ui()
+            register_ui(users_df)
 
 
-def login_ui():
+def login_ui(users_df):
     left, right = st.columns([0.6, 0.4], vertical_alignment="center")
 
     left.markdown("### Login")
     if right.button("Register", use_container_width=True):
         st.session_state["auth_input"] = "register"
         st.rerun()
-    st.text_input("Username", key="login_username_input")
-    st.text_input("Password", type="password", key="login_password_input")
+    username = st.text_input("Username", key="login_username_input")
+    password = st.text_input("Password", type="password", key="login_password_input")
     if st.button("Login", use_container_width=True):
-        athenticated = True
-        if athenticated:
-            st.toast("Logged in successfully!", icon="✔️")
-        else:
+        user_id = login(users_df, username, password)
+        if user_id is None:
             st.toast("Incorrect Username or password", icon="⛔")
+        else:
+            st.toast("Logged in successfully!", icon="✔️")
+            st.session_state["authenticated"] = True
+            st.session_state["current_user_id"] = user_id
+            st.switch_page("pages/1_Input_Transactions.py")
 
-def register_ui():
+def register_ui(users_df):
     left, right = st.columns([0.6, 0.4], vertical_alignment="center")
 
     left.markdown("### Register")
@@ -45,9 +52,59 @@ def register_ui():
             st.toast("Passwords must be the same", icon="⛔")
         elif username is None or username == "":
             st.toast("Username must be at least 1 character", icon="⛔")
-        elif username in "used usernames from db":
+        elif username in users_df["username"].values:
             st.toast("Username already in use, please choose another", icon="⛔")
         else:
-            # TODO: create an entry in users table that doesnt exist
+            register_user(username, password1)
             st.session_state["auth_input"] = "login"
             st.toast("Account Registered", icon="✔️")
+
+def load_users():
+    db = SQLDatabase(has_user_id=False)
+    db.create_tables()
+
+    cursor = db.execute_sql(
+        "SELECT * FROM Users"
+    )
+    users = cursor.fetchall()
+    users_df = pd.DataFrame(
+        users,
+        columns=[
+            "user_id",
+            "username",
+            "password_hash"
+        ]
+
+    )
+
+    return users_df
+
+def register_user(username, password):
+    db = SQLDatabase()
+    db.add_user(
+        username,
+        hash_password(password)
+    )
+
+def hash_password(password):
+    password_hash = bcrypt.hashpw(
+        password.encode(),
+        bcrypt.gensalt()
+    ).decode()
+    return password_hash
+
+def check_password(password, password_hash):
+    return bcrypt.hashpw(
+        password.encode(),
+        password_hash.encode()
+    )
+
+def login(user_df, username, password):
+    filtered_df = user_df[user_df["username"] == username]
+    if len(filtered_df) == 0:
+        return None
+    row = filtered_df.iloc[0]
+    password_hash = row["password_hash"]
+    if check_password(password, password_hash):
+        return row["user_id"]
+    return None

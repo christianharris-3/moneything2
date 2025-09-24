@@ -1,5 +1,7 @@
-import streamlit as st
+import src.utils as utils
+utils.block_if_no_auth()
 
+import streamlit as st
 from src.db_manager import DatabaseManager
 
 st.set_page_config(page_title="Vendors - Money Thing", page_icon="📈")#,layout="wide")

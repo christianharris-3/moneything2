@@ -1,7 +1,10 @@
+import src.utils as utils
+utils.block_if_no_auth()
+
 from src.db_manager import DatabaseManager
 from src.add_to_db import add_money_store, add_internal_transfer
 from src.money_tracker import build_money_ui
-import src.utils as utils
+import streamlit as st
 
 if __name__ == "__main__":
 

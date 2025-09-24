@@ -2,49 +2,14 @@ import sqlite3 as sql
 import math
 import datetime
 import pandas as pd
+import src.utils as utils
 
 class SQLDatabase:
-    def __init__(self):
-        self.user_id = 501
+    def __init__(self, has_user_id=True):
+        if has_user_id:
+            self.user_id = utils.get_user_id()
         self.connection = sql.connect("database.db")
         self.cursor = self.connection.cursor()
-
-    # def insert(self, table: str, data, exists=False) -> int:
-    #     """
-    #     Inserts/Overwrites the values in a row with the given values
-    #
-    #     :param table: the string representing the database table
-    #     :param data: A row of a dataframe
-    #     :return:
-    #     """
-    #
-    #     if exists is None:
-    #         exists = self.get_exists(table, data)
-    #
-    #     if not exists:
-    #         self.create_row(table, data)
-    #     else:
-    #         set_statement = SQLDatabase.string_set(data)
-    #         sql_statement = f"""
-    #             UPDATE SET {set_statement}
-    #             WHERE {data.keys()[0]}={data.values[0]}
-    #             """
-    #
-    #         self.execute_sql(
-    #             f"""
-    #             UPDATE MetaData
-    #             SET edited_timestamp = "{datetime.datetime.now().isoformat()}"
-    #             WHERE meta_data_id = (
-    #                 SELECT meta_data_id FROM {table}
-    #                 WHERE {data.keys()[0]}={data.values[0]}
-    #             );
-    #             """
-    #         )
-    #     if sql_statement is not None:
-    #         self.execute_sql(
-    #             sql_statement
-    #         )
-    #     return self.cursor.lastrowid
 
     @staticmethod
     def string_set(row):
@@ -61,6 +26,7 @@ class SQLDatabase:
             return "NULL"
         if isinstance(var, str):
             return f"\"{var}\""
+        print(var,"->",type(var))
         return str(var)
 
     def get_exists(self, table, data):
@@ -107,7 +73,7 @@ class SQLDatabase:
         :param data: dictionary of data to be saved, not including primary key of table
         :return: id of table
         """
-        meta_data_id = self.generate_meta_data()
+        meta_data_id = self.generate_meta_data(user_id)
         sql_statement = f"""
             INSERT INTO {table} ("{'", "'.join(data.keys())}", "meta_data_id")
             VALUES ({', '.join(map(self.stringify, data.values()))}, {meta_data_id})
@@ -143,6 +109,15 @@ class SQLDatabase:
                 """
             )
 
+    def add_user(self, username, password_hash):
+        self.execute_sql(
+            """
+            INSERT INTO Users (username, password_hash)
+            VALUES (?, ?);
+            """,
+            values=(username, password_hash)
+        )
+
     def load_table(self, obj, *args):
         return obj(
             self.execute_sql(
@@ -157,19 +132,21 @@ class SQLDatabase:
             *args
         )
 
-    def execute_sql(self, sql_statement, commit=True, log=True):
+    def execute_sql(self, sql_statement, commit=True, log=True, values=tuple()):
         if log:
             print("Executing SQL statement")
             print(sql_statement)
 
-        return_val = self.cursor.execute(sql_statement)
+        return_val = self.cursor.execute(sql_statement, values)
         if commit:
             self.connection.commit()
 
         return return_val
+
     def run_user_sql(self, sql_statement: str):
         if sql_statement == "" or sql_statement is None:
             return "Please enter an SQL query", False
+        sql_statement = sql_statement.strip()
         if sql_statement.split()[0] not in ["UPDATE", "SELECT", "DELETE"]:
             return "Error: Statement must being with UPDATE, SELECT or DELETE", False
 
@@ -315,6 +292,15 @@ class SQLDatabase:
                 edited_timestamp TEXT,
                 row_deleted BOOLEAN,
                 user_id INTEGER
+            );
+            """
+        )
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS Users(
+                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT, 
+                password_hash TEXT
             );
             """
         )

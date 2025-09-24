@@ -1,4 +1,5 @@
 import math
+import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
@@ -44,6 +45,19 @@ def double_run():
         st.rerun()
     else:
         st.session_state["has_rerun"] = False
+
+def is_authenticated() -> bool:
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+    return st.session_state["authenticated"]
+
+def block_if_no_auth():
+    if not is_authenticated():
+        st.switch_page("main.py")
+
+def get_user_id():
+    block_if_no_auth()
+    return st.session_state["current_user_id"]
 
 def make_display_inner_joins(*args) -> list[dict]:
     """

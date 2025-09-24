@@ -1,5 +1,7 @@
-import streamlit as st
 import src.utils as utils
+utils.block_if_no_auth()
+
+import streamlit as st
 from src.db_manager import DatabaseManager
 from src.sql_database import SQLDatabase
 
@@ -201,6 +203,9 @@ def spending_items_table_ui():
 
 
 if __name__ == "__main__":
+    if not utils.is_authenticated():
+        st.toast("Please Login")
+        st.switch_page("main.py")
 
     st.markdown("## Database Tables")
 

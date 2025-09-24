@@ -1,6 +1,11 @@
 import streamlit as st
 from src.authentication import st_auth_ui
-st.set_page_config(page_title="Home - Money Thing", page_icon="📈",layout="wide")
+st.set_page_config(
+    page_title="Home - Money Thing",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 
 # TODO: Add Special viewing menu for previous spending + proper edit system for spending

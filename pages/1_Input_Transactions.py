@@ -1,12 +1,15 @@
+import src.utils as utils
+utils.block_if_no_auth()
+
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.st_transaction_input import transaction_input_tab
-import src.utils as utils
 from src.pdf_reader import upload_pdf
 
 st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈",layout="wide")
 
 if __name__ == "__main__":
+
     db_manager = DatabaseManager()
 
     st.markdown("# Add/Edit Transactions")
