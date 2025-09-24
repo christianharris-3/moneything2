@@ -73,7 +73,7 @@ class SQLDatabase:
         :param data: dictionary of data to be saved, not including primary key of table
         :return: id of table
         """
-        meta_data_id = self.generate_meta_data(user_id)
+        meta_data_id = self.generate_meta_data()
         sql_statement = f"""
             INSERT INTO {table} ("{'", "'.join(data.keys())}", "meta_data_id")
             VALUES ({', '.join(map(self.stringify, data.values()))}, {meta_data_id})
