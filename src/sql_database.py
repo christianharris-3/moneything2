@@ -6,8 +6,7 @@ import src.utils as utils
 
 class SQLDatabase:
     def __init__(self, has_user_id=True):
-        if has_user_id:
-            self.user_id = utils.get_user_id()
+        self.user_id = utils.get_user_id()
         self.connection = sql.connect("database.db")
         self.cursor = self.connection.cursor()
 
@@ -26,7 +25,6 @@ class SQLDatabase:
             return "NULL"
         if isinstance(var, str):
             return f"\"{var}\""
-        print(var,"->",type(var))
         return str(var)
 
     def get_exists(self, table, data):
@@ -302,6 +300,13 @@ class SQLDatabase:
                 username TEXT, 
                 password_hash TEXT
             );
+            """
+        )
+        self.cursor.execute(
+            """
+            UPDATE MetaData
+            SET user_id=1
+            WHERE user_id=501
             """
         )
         self.connection.commit()

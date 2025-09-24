@@ -56,8 +56,9 @@ def block_if_no_auth():
         st.switch_page("main.py")
 
 def get_user_id():
-    block_if_no_auth()
-    return st.session_state["current_user_id"]
+    if is_authenticated():
+        return st.session_state["current_user_id"]
+    return None
 
 def make_display_inner_joins(*args) -> list[dict]:
     """

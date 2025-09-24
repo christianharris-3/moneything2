@@ -60,7 +60,7 @@ def register_ui(users_df):
             st.toast("Account Registered", icon="✔️")
 
 def load_users():
-    db = SQLDatabase(has_user_id=False)
+    db = SQLDatabase()
     db.create_tables()
 
     cursor = db.execute_sql(

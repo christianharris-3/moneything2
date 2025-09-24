@@ -52,7 +52,6 @@ def extract_hsbc_statement(pages: list[list[list[dict]]]):
     transaction_rows = []
     initial_balance_text = None
     for page in pages:
-        # print(" ------------------ NEW PAGE")
         at_transactions = False
         for line in page:
             text = " ".join([word["text"] for word in line])
