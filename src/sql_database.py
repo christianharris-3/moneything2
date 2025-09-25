@@ -13,11 +13,13 @@ class SQLDatabase:
     @staticmethod
     def string_set(row):
         items = list(row.items())
+        string_data = []
         values = []
         for key, val in items:
             if val is not None:
-                values.append(f"{key}={SQLDatabase.stringify(val)}")
-        return ", ".join(values)
+                string_data.append(f"{key}=?")
+                values.append(val)
+        return ", ".join(string_data), values
 
     @staticmethod
     def stringify(var) -> str:
@@ -30,8 +32,9 @@ class SQLDatabase:
     def get_exists(self, table, data):
         value = self.execute_sql(
             f"""
-            SELECT * FROM {table} WHERE {data.keys()[0]}={data.values[0]}
+            SELECT * FROM {table} WHERE {data.keys()[0]}=?
             """,
+            (data.values[0], ),
             False, False
         )
         return len(value.fetchall())>1
@@ -47,8 +50,9 @@ class SQLDatabase:
             INSERT INTO MetaData
             (created_timestamp, edited_timestamp, row_deleted, user_id)
             VALUES
-            ("{now}", "{now}", 0, {self.user_id})
-            """
+            (?, ?, 0, ?)
+            """,
+            (now, now, self.user_id)
         )
 
         return self.cursor.lastrowid
@@ -61,9 +65,10 @@ class SQLDatabase:
             SET row_deleted = 1
             WHERE meta_data_id IN (
                 SELECT meta_data_id FROM {table}
-                WHERE {variable}="{value}"
+                WHERE {variable}=?
             );
-            """
+            """,
+            (value, )
         )
     def create_row(self, table: str, data: dict) -> int:
         """
@@ -72,11 +77,15 @@ class SQLDatabase:
         :return: id of table
         """
         meta_data_id = self.generate_meta_data()
+        len_data = len(data)
         sql_statement = f"""
-            INSERT INTO {table} ("{'", "'.join(data.keys())}", "meta_data_id")
-            VALUES ({', '.join(map(self.stringify, data.values()))}, {meta_data_id})
+            INSERT INTO {table} ({','.join(data.keys())}, meta_data_id)
+            VALUES ({', '.join('?'*(len_data+1))})
             """
-        self.execute_sql(sql_statement)
+        self.execute_sql(
+            sql_statement,
+            tuple(list(data.values())+[meta_data_id])
+        )
         return self.cursor.lastrowid
 
     def update_row(self, table: str, data: dict, id_name: str, id_: int):
@@ -88,23 +97,25 @@ class SQLDatabase:
         :param id_: the id value for this row, e.g. 5
         :return: None
         """
-        set_statement = SQLDatabase.string_set(data)
+        set_statement, values = SQLDatabase.string_set(data)
         if set_statement != "":
             self.execute_sql(
                 f"""
                 UPDATE {table} SET {set_statement}
-                WHERE {id_name}={id_}
-                """
+                WHERE {id_name}=?
+                """,
+                values+(id_,)
             )
             self.execute_sql(
                 f"""
                 UPDATE MetaData
-                SET edited_timestamp = "{datetime.datetime.now().isoformat()}"
+                SET edited_timestamp = ?
                 WHERE meta_data_id = (
-                    SELECT meta_data_id FROM {table} 
-                    WHERE {id_name}={id_}
+                    SELECT meta_data_id FROM {table}
+                    WHERE {id_name}=?
                 );
-                """
+                """,
+                (datetime.datetime.now().isoformat(), id_)
             )
 
     def add_user(self, username, password_hash):
@@ -113,26 +124,27 @@ class SQLDatabase:
             INSERT INTO Users (username, password_hash)
             VALUES (?, ?);
             """,
-            values=(username, password_hash)
+            (username, password_hash)
         )
 
     def load_table(self, obj, *args):
         return obj(
             self.execute_sql(
                 f"""
-                SELECT {",".join([obj.TABLE+"."+col for col in obj.COLUMNS])}
+                SELECT {", ".join([col for col in obj.COLUMNS])}
                 FROM {obj.TABLE}
                 JOIN MetaData ON {obj.TABLE}.meta_data_id = MetaData.meta_data_id
-                WHERE MetaData.user_id = {self.user_id} AND MetaData.row_deleted = 0;
+                WHERE MetaData.user_id = ? AND MetaData.row_deleted = 0;
                 """,
-                False, False
+                (str(self.user_id),),
+                True, True
             ),
             *args
         )
 
-    def execute_sql(self, sql_statement, commit=True, log=True, values=tuple()):
+    def execute_sql(self, sql_statement, values=tuple(), commit=True, log=True):
         if log:
-            print("Executing SQL statement")
+            print("Executing SQL statement, values ->",values)
             print(sql_statement)
 
         return_val = self.cursor.execute(sql_statement, values)
@@ -142,6 +154,9 @@ class SQLDatabase:
         return return_val
 
     def run_user_sql(self, sql_statement: str):
+        if self.user_id != 1:
+            return "Error: Invalid Permissions", False
+
         if sql_statement == "" or sql_statement is None:
             return "Please enter an SQL query", False
         sql_statement = sql_statement.strip()

@@ -9,6 +9,8 @@ st.set_page_config(page_title="Database - Money Thing", page_icon="📈",layout=
 
 @st.fragment
 def user_input_sql():
+    if st.session_state.get("current_user_id", 0) != 1:
+        return
     db = SQLDatabase()
 
     if "cache_sql_input" not in st.session_state:
