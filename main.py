@@ -8,7 +8,6 @@ st.set_page_config(
 )
 
 
-# TODO: Add Special viewing menu for previous spending + proper edit system for spending
 # TODO: Add Menu for current money,:
 #  Use given spending data to graph money stored in each location over time
 #  System for future modelling: make modelling irrelevant to now (spending can be added in the future, then confirmed later to the date)
@@ -32,6 +31,8 @@ st.set_page_config(
 #  search by column with format "name: cheese"
 
 # TODO: create logs for server
+
+# TODO: put internal transfers in the same area as transactions
 
 if __name__ == "__main__":
     st_auth_ui()

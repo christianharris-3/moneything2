@@ -266,3 +266,48 @@ def split_to_numbers(string: str) -> list[str]:
         map(extract_numbers,string.split())
     ))
     return split
+
+
+def get_df_matching_search_term(df, search_term):
+    if search_term is None:
+        search_term = ""
+    def string_in_series(string, series):
+        if isinstance(series, pd.Series):
+            return series.apply(
+                lambda value: str(string).lower().strip() in str(value).lower()
+            )
+        else:
+            return list(map(
+                lambda value: str(string).lower().strip() in str(value).lower(),
+                series
+            ))
+
+    def row_matches_search_term(row, search_term):
+        if isNone(search_term):
+            return True
+        search_term = search_term.strip()
+        if search_term == "":
+            return True
+        if any(string_in_series(search_term, row)):
+            return True
+        if ":" in search_term:
+            column, term = search_term.split(":", 1)
+            if term == "":
+                return True
+            bool_map = string_in_series(column, row.keys())
+            if any(bool_map):
+                if any(string_in_series(term, row[bool_map])):
+                    return True
+        return False
+    bools = None
+    for term in search_term.split(";"):
+        bools_2 = df.apply(
+            lambda row: row_matches_search_term(row, term),
+            axis=1
+        )
+        if bools is None:
+            bools = bools_2
+        else:
+            bools = bools & bools_2
+
+    return df[bools]
