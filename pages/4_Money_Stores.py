@@ -5,8 +5,10 @@ from src.db_manager import DatabaseManager
 from src.add_to_db import add_money_store, add_internal_transfer
 from src.money_tracker import build_money_ui
 import streamlit as st
+from src.logger import log
 
 if __name__ == "__main__":
+    log("Loading page 4: Money Stores")
 
     db_manager = DatabaseManager()
 

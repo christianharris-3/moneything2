@@ -1,5 +1,5 @@
 import math
-import streamlit as st
+from src.logger import log
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
@@ -53,6 +53,7 @@ def is_authenticated() -> bool:
 
 def block_if_no_auth():
     if not is_authenticated():
+        log("Forcing user back to login page")
         st.switch_page("main.py")
 
 def get_user_id():
@@ -205,14 +206,14 @@ def string_to_date(input_string) -> datetime.date | None:
         month = int(month)
         year = int(year)
     except Exception as e:
-        print(f"ERROR converting date string: {input_string} -> {e}")
+        log(f"ERROR converting date string: {input_string} -> {e}")
         return None
     if year<100:
         year += 2000
     try:
         date = datetime.date(year, month, day)
     except Exception as e:
-        print(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}")
+        log(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}", level="error")
         return None
     return date
 

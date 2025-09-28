@@ -3,6 +3,7 @@ import math
 import datetime
 import pandas as pd
 import src.utils as utils
+from src.logger import log
 
 class SQLDatabase:
     def __init__(self, has_user_id=True):
@@ -32,10 +33,10 @@ class SQLDatabase:
     def get_exists(self, table, data):
         value = self.execute_sql(
             f"""
-            SELECT * FROM {table} WHERE {data.keys()[0]}=?
+            SELECT * FROM {table} WHERE {data.keys()[0]}=?;
             """,
             (data.values[0], ),
-            False, False
+            False
         )
         return len(value.fetchall())>1
 
@@ -50,7 +51,7 @@ class SQLDatabase:
             INSERT INTO MetaData
             (created_timestamp, edited_timestamp, row_deleted, user_id)
             VALUES
-            (?, ?, 0, ?)
+            (?, ?, 0, ?);
             """,
             (now, now, self.user_id)
         )
@@ -80,7 +81,7 @@ class SQLDatabase:
         len_data = len(data)
         sql_statement = f"""
             INSERT INTO {table} ({','.join(data.keys())}, meta_data_id)
-            VALUES ({', '.join('?'*(len_data+1))})
+            VALUES ({', '.join('?'*(len_data+1))});
             """
         self.execute_sql(
             sql_statement,
@@ -102,7 +103,7 @@ class SQLDatabase:
             self.execute_sql(
                 f"""
                 UPDATE {table} SET {set_statement}
-                WHERE {id_name}=?
+                WHERE {id_name}=?;
                 """,
                 tuple(values+[id_])
             )
@@ -137,19 +138,18 @@ class SQLDatabase:
                 WHERE MetaData.user_id = ? AND MetaData.row_deleted = 0;
                 """,
                 (str(self.user_id),),
-                True, True
+                False
             ),
             *args
         )
 
-    def execute_sql(self, sql_statement, values=tuple(), commit=True, log=True):
-        if log:
-            print("Executing SQL statement, values ->",values)
-            print(sql_statement)
+    def execute_sql(self, sql_statement, values=tuple(), do_log=True):
+        if do_log:
+            log("Executing SQL statement with values ->", values)
+            log(sql_statement)
 
         return_val = self.cursor.execute(sql_statement, values)
-        if commit:
-            self.connection.commit()
+        self.connection.commit()
 
         return return_val
 
@@ -163,23 +163,23 @@ class SQLDatabase:
         if sql_statement.split()[0] not in ["UPDATE", "SELECT", "DELETE"]:
             return "Error: Statement must being with UPDATE, SELECT or DELETE", False
 
-        if "where" in sql_statement.lower():
-            sql_statement += " AND"
-        else:
-            sql_statement += " WHERE"
-        sql_statement += f" meta_data_id IN (SELECT meta_data_id FROM MetaData WHERE user_id={self.user_id} AND row_deleted=0)"
+        # if "where" in sql_statement.lower():
+        #     sql_statement += " AND"
+        # else:
+        #     sql_statement += " WHERE"
+        # sql_statement += f" meta_data_id IN (SELECT meta_data_id FROM MetaData WHERE user_id={self.user_id} AND row_deleted=0)"
 
-        print("Executing User SQL:", sql_statement)
+        log("Executing User SQL:", sql_statement)
         success = True
         try:
             output = self.cursor.execute(sql_statement)
-            if output.description is not None:
-                columns = [info[0] for info in output.description]
-                output = pd.DataFrame(
-                    output.fetchall(),
-                    columns=columns
-                )
-                output = output.drop("meta_data_id", axis=1)
+            # if output.description is not None:
+            #     columns = [info[0] for info in output.description]
+            #     output = pd.DataFrame(
+            #         output.fetchall(),
+            #         columns=columns
+            #     )
+            #     output = output.drop("meta_data_id", axis=1)
 
             self.connection.commit()
         except Exception as e:

@@ -1,5 +1,6 @@
 import streamlit as st
 from src.sql_database import SQLDatabase
+from src.logger import log
 import pandas as pd
 import bcrypt
 
@@ -33,6 +34,7 @@ def login_ui(users_df):
             st.toast("Incorrect Username or password", icon="⛔")
         else:
             st.toast("Logged in successfully!", icon="✔️")
+            log(f"Logging In with User ID: {user_id}")
             st.session_state["authenticated"] = True
             st.session_state["current_user_id"] = user_id
             st.switch_page("pages/1_Input_Transactions.py")
@@ -64,7 +66,8 @@ def load_users():
     db.create_tables()
 
     cursor = db.execute_sql(
-        "SELECT * FROM Users"
+        "SELECT * FROM Users",
+        do_log=False
     )
     users = cursor.fetchall()
     users_df = pd.DataFrame(
@@ -106,5 +109,5 @@ def login(user_df, username, password):
     row = filtered_df.iloc[0]
     password_hash = row["password_hash"]
     if check_password(password, password_hash):
-        return row["user_id"]
+        return int(row["user_id"])
     return None

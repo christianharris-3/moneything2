@@ -5,10 +5,12 @@ import streamlit as st
 from src.db_manager import DatabaseManager
 from src.st_transaction_input import transaction_input_tab
 from src.pdf_reader import upload_pdf
+from src.logger import log
 
 st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈",layout="wide")
 
 if __name__ == "__main__":
+    log("Loading page 1: Input Transactions")
 
     db_manager = DatabaseManager()
 

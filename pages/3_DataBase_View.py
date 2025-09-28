@@ -4,6 +4,7 @@ utils.block_if_no_auth()
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.sql_database import SQLDatabase
+from src.logger import log
 
 st.set_page_config(page_title="Database - Money Thing", page_icon="📈",layout="wide")
 
@@ -205,6 +206,8 @@ def spending_items_table_ui():
 
 
 if __name__ == "__main__":
+    log("Loading page 3: Database View")
+
     if not utils.is_authenticated():
         st.toast("Please Login")
         st.switch_page("main.py")
