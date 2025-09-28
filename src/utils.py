@@ -306,8 +306,7 @@ def get_df_matching_search_term(df, search_term):
             axis=1
         )
         if bools is None:
-            bools = bools_2
+            bools = bools_2.astype(bool)
         else:
-            bools = bools & bools_2
-
+            bools = bools & bools_2.astype(bool)
     return df[bools]

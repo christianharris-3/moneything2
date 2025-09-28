@@ -226,8 +226,9 @@ if __name__ == "__main__":
         with st.expander("Categories"):
             categories_table_ui()
 
-        with st.expander("Run SQL"):
-            user_input_sql()
+        if st.session_state.get("current_user_id", 0) == 1:
+            with st.expander("Run SQL"):
+                user_input_sql()
 
     with right:
         with st.expander("Money Stores"):
@@ -238,6 +239,7 @@ if __name__ == "__main__":
 
         with st.expander("Internal Transfers"):
             internal_transfers_table_ui()
+
         with st.expander("Transactions"):
             transactions_table_ui()
 

@@ -47,6 +47,7 @@ def transaction_input_tab(db_manager):
             if mode_toggle.button("📅"):
                 state["search_mode"] = False
                 state["depth"] = "years"
+                st.rerun()
         else:
             if state["depth"] == "years":
                 ui_section.write(f"### Years")
@@ -62,6 +63,7 @@ def transaction_input_tab(db_manager):
             if mode_toggle.button("🔎"):
                 state["search_mode"] = True
                 state["depth"] = "transactions"
+                st.rerun()
 
         # st.divider()
         if state["search_mode"]:
@@ -302,10 +304,10 @@ def create_view_internal_transfer_ui(db_manager, transaction_row):
 
 
     cols = st.columns([1, 1])
-    if cols[0].button("Edit", use_container_width=True, icon="✏️"):
+    if cols[0].button("Edit", use_container_width=True, icon="✏️", disabled=True):
         load_transaction_input(db_manager, transaction_row["transfer_id"])
     if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
-        delete_transaction(db_manager, transaction_row["transfer_id"])
+        delete_internal_transfer(db_manager, transaction_row["transfer_id"])
         click_ui_nav_button("days")
 
 
@@ -415,6 +417,8 @@ def load_transaction_input(db_manager, transaction_id):
 
 def get_transactions_info_years_months_days(db_manager, state) -> dict[str, dict]:
     transactions_df = get_transaction_and_transfer_df(db_manager)
+    if len(transactions_df) == 0:
+        return {}
 
     depth_encoder = {
         "years": {
@@ -488,6 +492,11 @@ def find_transaction_value(db_manager, df_row) -> float:
 def delete_transaction(db_manager, transaction_id):
     db_manager.db.delete("Transactions", "transaction_id", transaction_id)
     db_manager.db.delete("SpendingItems", "transaction_id", transaction_id)
+
+def delete_internal_transfer(db_manager, transfer_id):
+    db_manager.db.delete("InternalTransfers", "transfer_id", transfer_id)
+
+
 
 def convert_to_internal_transfer(db_manager, transaction_ids):
     row1 = db_manager.transactions.get_db_row(transaction_ids[0])
