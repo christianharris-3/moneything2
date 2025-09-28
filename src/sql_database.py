@@ -1,7 +1,7 @@
 import sqlite3 as sql
 import math
 import datetime
-import pandas as pd
+import numpy as np
 import src.utils as utils
 from src.logger import log
 
@@ -144,6 +144,7 @@ class SQLDatabase:
         )
 
     def execute_sql(self, sql_statement, values=tuple(), do_log=True):
+        values = tuple(map(lambda a: int(a) if isinstance(a, np.int64) else a, values))
         if do_log:
             log("Executing SQL statement with values ->", values)
             log(sql_statement)
