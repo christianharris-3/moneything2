@@ -104,7 +104,7 @@ class SQLDatabase:
                 UPDATE {table} SET {set_statement}
                 WHERE {id_name}=?
                 """,
-                values+(id_,)
+                tuple(values+[id_])
             )
             self.execute_sql(
                 f"""
