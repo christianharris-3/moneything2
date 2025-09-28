@@ -14,10 +14,51 @@ def st_auth_ui():
     with middle.container(border=True):
 
         if st.session_state["auth_input"] == "login":
-            login_ui(users_df)
+            if st.session_state["authenticated"]:
+                logged_in_ui(users_df)
+            else:
+                login_ui(users_df)
         else:
             register_ui(users_df)
 
+def logged_in_ui(users_df):
+    user_row = users_df[users_df["user_id"] == st.session_state["current_user_id"]].iloc[0]
+    st.markdown(f"## Logged in as: {user_row['username']}")
+    if st.button("logout", width="stretch"):
+        logout()
+        st.rerun()
+
+    if st.button("Change Password", width="stretch"):
+        change_password_ui(user_row)
+    if st.button("Change Username", width="stretch"):
+        change_username_ui(user_row)
+
+@st.dialog("Change Password")
+def change_password_ui(user_row):
+    current = st.text_input("Current Password", type="password")
+    password1 = st.text_input("New Password", type="password")
+    password2 = st.text_input("Repeat New Password", type="password")
+    if not (current == "" or password1 == "" or password2 == ""):
+        output = None
+        if not check_password(current, user_row["password_hash"]):
+            output = "Current Password doesn't match!"
+        if password1 != password2:
+            output = "New passwords do not match!"
+        if output is not None:
+            st.markdown(output)
+        elif st.button("Change Password"):
+            st.toast("Password Changed!", icon="✔️")
+            change_password(user_row["user_id"], password1)
+            st.rerun()
+
+@st.dialog("Change Username")
+def change_username_ui(user_row):
+    new_username = st.text_input("New Username")
+    if new_username != "":
+        if st.button("Change Username"):
+            st.toast("Username Changed!", icon="✔️")
+            change_username(user_row["user_id"], new_username)
+            st.rerun()
 
 def login_ui(users_df):
     left, right = st.columns([0.6, 0.4], vertical_alignment="center")
@@ -54,12 +95,13 @@ def register_ui(users_df):
             st.toast("Passwords must be the same", icon="⛔")
         elif username is None or username == "":
             st.toast("Username must be at least 1 character", icon="⛔")
-        elif username in users_df["username"].values:
+        elif username.lower() in map(lambda string: string.lower(), users_df["username"].values):
             st.toast("Username already in use, please choose another", icon="⛔")
         else:
             register_user(username, password1)
             st.session_state["auth_input"] = "login"
             st.toast("Account Registered", icon="✔️")
+            st.rerun()
 
 def load_users():
     db = SQLDatabase()
@@ -89,6 +131,28 @@ def register_user(username, password):
         hash_password(password)
     )
 
+def change_password(user_id, new_password):
+    db = SQLDatabase()
+    db.update_row(
+        "Users",
+        {
+            "password_hashed": hash_password(new_password)
+        },
+        "user_id",
+        user_id
+    )
+
+def change_username(user_id, new_username):
+    db = SQLDatabase()
+    db.update_row(
+        "Users",
+        {
+            "username": new_username
+        },
+        "user_id",
+        user_id
+    )
+
 def hash_password(password):
     password_hash = bcrypt.hashpw(
         password.encode(),
@@ -103,7 +167,7 @@ def check_password(password, password_hash):
     )
 
 def login(user_df, username, password):
-    filtered_df = user_df[user_df["username"] == username]
+    filtered_df = user_df[user_df["username"].str.lower() == username.lower()]
     if len(filtered_df) == 0:
         return None
     row = filtered_df.iloc[0]
@@ -111,3 +175,9 @@ def login(user_df, username, password):
     if check_password(password, password_hash):
         return int(row["user_id"])
     return None
+
+def logout():
+    log("Logged Out")
+    keys = list(st.session_state.keys())
+    for key in keys:
+        del st.session_state[key]
