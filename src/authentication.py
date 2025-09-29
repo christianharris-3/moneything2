@@ -136,7 +136,7 @@ def change_password(user_id, new_password):
     db.update_row(
         "Users",
         {
-            "password_hashed": hash_password(new_password)
+            "password_hash": hash_password(new_password)
         },
         "user_id",
         user_id
