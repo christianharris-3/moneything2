@@ -161,7 +161,7 @@ def hash_password(password):
     return password_hash
 
 def check_password(password, password_hash):
-    return bcrypt.hashpw(
+    return bcrypt.checkpw(
         password.encode(),
         password_hash.encode()
     )
