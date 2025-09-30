@@ -19,6 +19,7 @@ if __name__ == "__main__":
 #  make internal transfers editable in transactions menu
 #  add pages at bottom to all transactions lists when len items > 15 etc
 #  add less shit method to convert/merge/add locations to vendors and locations
+#  method to add/edit/delete categories
 
 
 # TODO: LOW PRIORITY
