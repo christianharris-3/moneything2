@@ -1,6 +1,7 @@
 import streamlit as st
 from src.adding_transaction import AddingTransaction
 import src.utils as utils
+import pandas as pd
 from collections import defaultdict
 import datetime
 
@@ -46,6 +47,7 @@ def transaction_input_tab(db_manager):
             if mode_toggle.button("📅"):
                 state["search_mode"] = False
                 state["depth"] = "years"
+                st.rerun()
         else:
             if state["depth"] == "years":
                 ui_section.write(f"### Years")
@@ -56,21 +58,28 @@ def transaction_input_tab(db_manager):
             elif state["depth"] == "transactions":
                 ui_section.write(f"### {state['timestamp'].strftime('%a %d %b %y')}")
             elif state["depth"] == "specific":
-                ui_section.write(f"### Transaction ID {state['transaction_id']}")
+                ui_section.write(f"### ID {int(state['transaction_id'])}")
 
             if mode_toggle.button("🔎"):
                 state["search_mode"] = True
                 state["depth"] = "transactions"
+                st.rerun()
 
         # st.divider()
         if state["search_mode"]:
             if state["depth"] == "transactions":
                 list_searched_transactions(db_manager, state)
             elif state["depth"] == "specific":
-                create_view_transaction_ui(
-                    db_manager,
-                    db_manager.transactions.get_db_row(state["transaction_id"])
-                )
+                if state["is_internal"]:
+                    create_view_internal_transfer_ui(
+                        db_manager,
+                        db_manager.internal_transfers.get_db_row(state["transaction_id"])
+                    )
+                else:
+                    create_view_transaction_ui(
+                        db_manager,
+                        db_manager.transactions.get_db_row(state["transaction_id"])
+                    )
 
         else:
             transactions_listing_ui(db_manager, state)
@@ -180,12 +189,14 @@ def transactions_edit_ui(db_manager):
         st.rerun()
 
 
-def click_ui_nav_button(new_depth, new_timestamp=None, transaction_id=None):
+def click_ui_nav_button(new_depth, new_timestamp=None, transaction_id=None, is_internal=None):
     st.session_state["transaction_viewer_date"]["depth"] = new_depth
     if new_timestamp is not None:
         st.session_state["transaction_viewer_date"]["timestamp"] = new_timestamp
     if transaction_id is not None:
         st.session_state["transaction_viewer_date"]["transaction_id"] = transaction_id
+    if is_internal is not None:
+        st.session_state["transaction_viewer_date"]["is_internal"] = is_internal
 
 def move_depth(depth, diff=0):
     next_depths = [
@@ -200,35 +211,29 @@ def move_depth(depth, diff=0):
     ]
 
 def transactions_listing_ui(db_manager, state):
-    transactions_info = get_transactions_info(db_manager, state)
     if state["depth"] == "transactions":
-        selected_transactions = []
-        for id_ in transactions_info:
-            view_button, select_checkbox = st.columns([0.9, 0.1])
-            view_button.button(
-                transactions_info[id_],
-                use_container_width=True,
-                on_click=click_ui_nav_button,
-                args=("specific", None, id_),
-                key=f"transaction_button_{id_}"
-            )
-            if select_checkbox.checkbox(
-                "merge transactions",
-                label_visibility="collapsed",
-                key=f"select_transaction_checkbox_{id_}",
-                width="stretch"
-            ):
-                selected_transactions.append(id_)
-        if len(selected_transactions) != 2:
-            st.markdown("Select 2 transactions to convert to Internal Transfer")
-        else:
-            if st.button("Convert to Internal Transfer"):
-                convert_to_internal_transfer(db_manager, selected_transactions)
+        ui_list_transactions(
+            db_manager,
+            state,
+            get_transactions_info_for_date(db_manager, state)
+        )
 
     elif state["depth"] == "specific":
-        create_view_transaction_ui(db_manager, transactions_info)
+        if state["is_internal"]:
+            create_view_internal_transfer_ui(
+                db_manager,
+                db_manager.internal_transfers.get_db_row(state["transaction_id"])
+            )
+        else:
+            create_view_transaction_ui(
+                db_manager,
+                db_manager.transactions.get_db_row(state["transaction_id"])
+            )
 
     else:
+        transactions_info = get_transactions_info_years_months_days(db_manager, state)
+
+        ### TODO: clean this up
         transactions_info_list = list(transactions_info.items())
         if state["depth"] == "years":
             transactions_info_list.sort(key=lambda x: x[0])
@@ -238,7 +243,7 @@ def transactions_listing_ui(db_manager, state):
             transactions_info_list.sort(key=lambda x: x[0])
         for date, info_dict in transactions_info_list:
             st.button(
-                f"{date}   ->  Income: £{info_dict['income']:.2f}   Spending: £{info_dict['spending']:.2f}",
+                f"{date} -> Income: £{info_dict['income']:.2f} Spending: £{info_dict['spending']:.2f}",
                 use_container_width=True,
                 on_click=click_ui_nav_button,
                 args=(
@@ -256,10 +261,14 @@ def create_view_transaction_ui(db_manager, transaction_row):
     cols[1].metric("Money Store", transaction_row["money_store"])
     if not utils.isNone(transaction_row["category_string"]):
         st.metric("Category", transaction_row["category_string"])
-    cols = st.columns([1.2, 1])
-    cols[0].metric("Date", transaction_row["date"])
+
     if not utils.isNone(transaction_row["time"]):
+        cols = st.columns([1.2, 1])
+        cols[0].metric("Date", transaction_row["date"])
         cols[1].metric("Time", transaction_row["time"])
+    else:
+        st.metric("Date", transaction_row["date"])
+
     st.markdown("#### Description")
     st.markdown(transaction_row["description"])
     with st.expander("Items"):
@@ -280,26 +289,59 @@ def create_view_transaction_ui(db_manager, transaction_row):
         delete_transaction(db_manager, transaction_row["transaction_id"])
         click_ui_nav_button("days")
 
+def create_view_internal_transfer_ui(db_manager, transaction_row):
+    st.metric("Source Money Store", transaction_row["source_store"])
+    st.metric("Target Money Store", transaction_row["target_store"])
+
+    st.metric("Money", f"£{transaction_row['money_transferred']}")
+
+    if not utils.isNone(transaction_row["time"]):
+        cols = st.columns([1.2, 1])
+        cols[0].metric("Date", transaction_row["date"])
+        cols[1].metric("Time", transaction_row["time"])
+    else:
+        st.metric("Date", transaction_row["date"])
+
+
+    cols = st.columns([1, 1])
+    if cols[0].button("Edit", use_container_width=True, icon="✏️", disabled=True):
+        load_transaction_input(db_manager, transaction_row["transfer_id"])
+    if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
+        delete_internal_transfer(db_manager, transaction_row["transfer_id"])
+        click_ui_nav_button("days")
+
 
 def list_searched_transactions(db_manager, state):
-    filtered_df = db_manager.transactions.get_df_matching_search_term(state["search_term"])
+    transactions_df = get_transaction_and_transfer_df(db_manager)
+    filtered_df = utils.get_df_matching_search_term(transactions_df, state["search_term"])
+    ui_list_transactions(db_manager, state, filtered_df)
 
+def ui_list_transactions(db_manager, state, transactions_transfers_df):
     buttons_container = st.container()
-    pages_manager_ui(state, len(filtered_df))
+    pages_manager_ui(state, len(transactions_transfers_df))
 
-    filtered_df["datetime"] = filtered_df["date"].apply(utils.string_to_date)
-    filtered_df = filtered_df.sort_values("datetime", ascending=False)
+    transactions_transfers_df["date_obj"] = transactions_transfers_df["date"].apply(utils.string_to_date)
+    filtered_df = transactions_transfers_df.sort_values("date_obj", ascending=False)
 
     filtered_df = filtered_df.iloc[ITEMS_PER_PAGE*(state["page"]-1):ITEMS_PER_PAGE*state["page"]]
 
-    for i,row in filtered_df.iterrows():
-        buttons_container.button(
-            f"{row['date']} -> {row['vendor_name']} {'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row)}",
-            use_container_width=True,
-            on_click=click_ui_nav_button,
-            args=("specific", None, row["transaction_id"]),
-            key=f"transaction_button_{row['transaction_id']}"
-        )
+    for i, row in filtered_df.iterrows():
+        if row["is_internal"]:
+            buttons_container.button(
+                f"{row['date']} -> {row['source_store']} - {row['target_store']} £{row['money_transferred']:.2f}",
+                use_container_width=True,
+                on_click=click_ui_nav_button,
+                args=("specific", None, row["transfer_id"], True),
+                key=f"internal_transfer_button_{row['transfer_id']}"
+            )
+        else:
+            buttons_container.button(
+                f"{row['date']} -> {row['vendor_name']} {'+' if row['is_income'] else '-'}£{find_transaction_value(db_manager, row):.2f}",
+                use_container_width=True,
+                on_click=click_ui_nav_button,
+                args=("specific", None, row["transaction_id"], False),
+                key=f"transaction_button_{row['transaction_id']}"
+            )
 
 def pages_manager_ui(state, num_items):
     total_pages = num_items//ITEMS_PER_PAGE+1
@@ -373,74 +415,58 @@ def load_transaction_input(db_manager, transaction_id):
     ]]
 
 
-def get_transactions_info(db_manager, state):
-    transactions_df = db_manager.transactions.db_data
-    transactions_dict = dict(zip(
-        transactions_df["transaction_id"],
-        transactions_df["date"].apply(utils.string_to_date)
-    ))
-    transactions_dict = {
-        key: value for key, value in transactions_dict.items()
-        if value is not None
-    }
-    output = {}
-    if state["depth"] == "years":
-        years = defaultdict(list)
-        for id_ in transactions_dict:
-            years[transactions_dict[id_].year].append(id_)
-        for year in years:
-            timestamp = datetime.date(year=year, month=1, day=1)
-            output[timestamp.strftime("%Y")] = summarise_transactions(
-                db_manager,
-                transactions_df[transactions_df["transaction_id"].isin(years[year])],
-                timestamp
-            )
-    elif state["depth"] == "months":
-        months = defaultdict(list)
-        for id_ in transactions_dict:
-            if state["timestamp"].year == transactions_dict[id_].year:
-                months[transactions_dict[id_].month].append(id_)
-        for month in months:
-            timestamp = datetime.date(year=state["timestamp"].year, month=month,day=1)
-            output[
-                timestamp.strftime("%B")
-            ] = summarise_transactions(
-                db_manager,
-                transactions_df[transactions_df["transaction_id"].isin(months[month])],
-                timestamp
-            )
-    elif state["depth"] == "days":
-        days = defaultdict(list)
-        for id_ in transactions_dict:
-            if state["timestamp"].year == transactions_dict[id_].year and state["timestamp"].month == transactions_dict[id_].month:
-                days[transactions_dict[id_].day].append(id_)
-        for day in days:
-            timestamp = datetime.date(year=state["timestamp"].year, month=state["timestamp"].month,day=day)
-            output[
-                timestamp.strftime("%d %a")
-            ] = summarise_transactions(
-                db_manager,
-                transactions_df[transactions_df["transaction_id"].isin(days[day])],
-                timestamp
-            )
-    elif state["depth"] == "transactions":
-        transactions = []
-        for id_ in transactions_dict:
-            if state["timestamp"] == transactions_dict[id_]:
-                transactions.append(id_)
-        for transaction_id in transactions:
-            row = db_manager.transactions.get_filtered_df("transaction_id", transaction_id)
-            summary = summarise_transactions(db_manager, row)
-            row = row.iloc[0]
-            if summary["income"]>0:
-                output[transaction_id] = f"{row['vendor_name']} -> +£{summary['income']:.2f}"
-            else:
-                output[transaction_id] = f"{row['vendor_name']} -> -£{summary['spending']:.2f}"
-    elif state["depth"] == "specific":
-        row = db_manager.transactions.get_db_row(state["transaction_id"])
+def get_transactions_info_years_months_days(db_manager, state) -> dict[str, dict]:
+    transactions_df = get_transaction_and_transfer_df(db_manager)
+    if len(transactions_df) == 0:
+        return {}
 
-        return row
+    depth_encoder = {
+        "years": {
+            "date_id_func": lambda obj: datetime.date(obj.year, 1, 1),
+            "filter_func": lambda _: True,
+            "format_date": "%Y"
+        },
+        "months": {
+            "date_id_func": lambda obj: datetime.date(obj.year, obj.month, 1),
+            "filter_func": lambda obj: obj.year == state["timestamp"].year,
+            "format_date": "%B"
+        },
+        "days": {
+            "date_id_func": lambda obj: datetime.date(obj.year, obj.month, obj.day),
+            "filter_func": lambda obj: (obj.year == state["timestamp"].year and obj.month == state["timestamp"].month),
+            "format_date": "%d %a"
+        },
+    }
+
+    type_info = depth_encoder[state["depth"]]
+
+    if state["depth"] not in depth_encoder.keys():
+        raise Exception(f"<get_transactions_info_years_months_days> function run when depth is not years, months or days: state.depth = {state['depth']}")
+
+    transactions_df["date_obj"] = transactions_df["date"].apply(utils.string_to_date)
+
+    transactions_df = transactions_df[transactions_df["date_obj"].apply(type_info["filter_func"])]
+
+    transactions_df["date_id"] = transactions_df["date_obj"].apply(
+        type_info["date_id_func"]
+    )
+    output = {}
+    for date_id in transactions_df["date_id"].unique():
+        output[
+            date_id.strftime(type_info["format_date"])
+        ] = summarise_transactions(
+            db_manager,
+            transactions_df[transactions_df["date_id"] == date_id],
+            date_id
+        )
+
     return output
+
+def get_transactions_info_for_date(db_manager, state):
+    transactions_df = get_transaction_and_transfer_df(db_manager)
+    transactions_df["date_obj"] = transactions_df["date"].apply(utils.string_to_date)
+    return transactions_df[transactions_df["date_obj"] == state["timestamp"]]
+
 
 def summarise_transactions(db_manager, transactions_df, timestamp=None):
     transactions_df = transactions_df.copy()
@@ -466,6 +492,11 @@ def find_transaction_value(db_manager, df_row) -> float:
 def delete_transaction(db_manager, transaction_id):
     db_manager.db.delete("Transactions", "transaction_id", transaction_id)
     db_manager.db.delete("SpendingItems", "transaction_id", transaction_id)
+
+def delete_internal_transfer(db_manager, transfer_id):
+    db_manager.db.delete("InternalTransfers", "transfer_id", transfer_id)
+
+
 
 def convert_to_internal_transfer(db_manager, transaction_ids):
     row1 = db_manager.transactions.get_db_row(transaction_ids[0])
@@ -512,6 +543,17 @@ def convert_to_internal_transfer(db_manager, transaction_ids):
     else:
         st.markdown("Selected transactions can't be converted")
 
+def get_transaction_and_transfer_df(db_manager):
+    transactions = db_manager.transactions.db_data
+    internal_transfers = db_manager.internal_transfers.db_data
+    transactions["is_internal"] = False
+    internal_transfers["is_internal"] = True
+
+    combined = pd.concat([
+        transactions, internal_transfers
+    ]).reset_index(drop=True)
+
+    return combined
 
 
 

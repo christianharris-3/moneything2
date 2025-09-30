@@ -4,11 +4,14 @@ utils.block_if_no_auth()
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.sql_database import SQLDatabase
+from src.logger import log
 
 st.set_page_config(page_title="Database - Money Thing", page_icon="📈",layout="wide")
 
 @st.fragment
 def user_input_sql():
+    if st.session_state.get("current_user_id", 0) != 1:
+        return
     db = SQLDatabase()
 
     if "cache_sql_input" not in st.session_state:
@@ -203,9 +206,7 @@ def spending_items_table_ui():
 
 
 if __name__ == "__main__":
-    if not utils.is_authenticated():
-        st.toast("Please Login")
-        st.switch_page("main.py")
+    log("Loading page 3: Database View")
 
     st.markdown("## Database Tables")
 
@@ -224,8 +225,9 @@ if __name__ == "__main__":
         with st.expander("Categories"):
             categories_table_ui()
 
-        with st.expander("Run SQL"):
-            user_input_sql()
+        if st.session_state.get("current_user_id", 0) == 1:
+            with st.expander("Run SQL"):
+                user_input_sql()
 
     with right:
         with st.expander("Money Stores"):
@@ -236,6 +238,7 @@ if __name__ == "__main__":
 
         with st.expander("Internal Transfers"):
             internal_transfers_table_ui()
+
         with st.expander("Transactions"):
             transactions_table_ui()
 

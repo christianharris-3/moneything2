@@ -1,5 +1,5 @@
 import math
-import streamlit as st
+from src.logger import log
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
@@ -53,7 +53,8 @@ def is_authenticated() -> bool:
 
 def block_if_no_auth():
     if not is_authenticated():
-        st.switch_page("main.py")
+        log("Forcing user back to login page")
+        st.switch_page("0_👤_Account.py")
 
 def get_user_id():
     if is_authenticated():
@@ -205,14 +206,14 @@ def string_to_date(input_string) -> datetime.date | None:
         month = int(month)
         year = int(year)
     except Exception as e:
-        print(f"ERROR converting date string: {input_string} -> {e}")
+        log(f"ERROR converting date string: {input_string} -> {e}")
         return None
     if year<100:
         year += 2000
     try:
         date = datetime.date(year, month, day)
     except Exception as e:
-        print(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}")
+        log(f"FAILED TO CONVERT: {input_string}, date output is: {day}/{month}/{year}, Exception: {e}", level="error")
         return None
     return date
 
@@ -266,3 +267,47 @@ def split_to_numbers(string: str) -> list[str]:
         map(extract_numbers,string.split())
     ))
     return split
+
+
+def get_df_matching_search_term(df, search_term):
+    if search_term is None:
+        search_term = ""
+    def string_in_series(string, series):
+        if isinstance(series, pd.Series):
+            return series.apply(
+                lambda value: str(string).lower().strip() in str(value).lower()
+            )
+        else:
+            return list(map(
+                lambda value: str(string).lower().strip() in str(value).lower(),
+                series
+            ))
+
+    def row_matches_search_term(row, search_term):
+        if isNone(search_term):
+            return True
+        search_term = search_term.strip()
+        if search_term == "":
+            return True
+        if any(string_in_series(search_term, row)):
+            return True
+        if ":" in search_term:
+            column, term = search_term.split(":", 1)
+            if term == "":
+                return True
+            bool_map = string_in_series(column, row.keys())
+            if any(bool_map):
+                if any(string_in_series(term, row[bool_map])):
+                    return True
+        return False
+    bools = None
+    for term in search_term.split(";"):
+        bools_2 = df.apply(
+            lambda row: row_matches_search_term(row, term),
+            axis=1
+        )
+        if bools is None:
+            bools = bools_2.astype(bool)
+        else:
+            bools = bools & bools_2.astype(bool)
+    return df[bools]
