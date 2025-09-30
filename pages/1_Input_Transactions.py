@@ -32,4 +32,5 @@ if __name__ == "__main__":
                 upload_pdf(file, db_manager, money_store)
                 progress_bar.progress((i+1)/len(files))
             st.markdown("Upload Complete!")
-            utils.double_run()
+
+    # utils.double_run()

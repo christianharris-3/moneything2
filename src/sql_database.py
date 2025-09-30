@@ -302,11 +302,4 @@ class SQLDatabase:
             );
             """
         )
-        self.cursor.execute(
-            """
-            UPDATE MetaData
-            SET user_id=1
-            WHERE user_id=501
-            """
-        )
         self.connection.commit()
