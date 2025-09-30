@@ -208,10 +208,6 @@ def spending_items_table_ui():
 if __name__ == "__main__":
     log("Loading page 3: Database View")
 
-    if not utils.is_authenticated():
-        st.toast("Please Login")
-        st.switch_page("main.py")
-
     st.markdown("## Database Tables")
 
     left, right = st.columns(2)

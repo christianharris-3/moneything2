@@ -78,7 +78,7 @@ def login_ui(users_df):
             log(f"Logging In with User ID: {user_id}")
             st.session_state["authenticated"] = True
             st.session_state["current_user_id"] = user_id
-            st.switch_page("pages/1_Input_Transactions.py")
+            st.switch_page("pages/1_💳_Transactions.py")
 
 def register_ui(users_df):
     left, right = st.columns([0.6, 0.4], vertical_alignment="center")
