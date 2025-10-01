@@ -144,11 +144,10 @@ class SQLDatabase:
         )
 
     def execute_sql(self, sql_statement, values=tuple(), do_log=True):
-        values = tuple(map(lambda a: int(a) if isinstance(a, np.int64) else a, values))
+        values = utils.death_to_numpy(values)
         if do_log:
             log("Executing SQL statement with values ->", values)
             log(sql_statement)
-
         return_val = self.cursor.execute(sql_statement, values)
         self.connection.commit()
 
@@ -316,13 +315,6 @@ class SQLDatabase:
                 username TEXT, 
                 password_hash TEXT
             );
-            """
-        )
-        self.cursor.execute(
-            """
-            UPDATE MetaData
-            SET user_id=1
-            WHERE user_id=501
             """
         )
         self.connection.commit()

@@ -1,14 +1,14 @@
 import pandas as pd
 import math
-
+from src.logger import log
 import streamlit as st
 
 import src.utils as utils
 
 class AddingTransaction:
-    def __init__(self, session_state, db_manager):
-        if not "adding_spending_df" in session_state:
-            session_state["adding_spending_df"] = pd.DataFrame(
+    def __init__(self, db_manager):
+        if not "adding_spending_df" in st.session_state:
+            st.session_state["adding_spending_df"] = pd.DataFrame(
                 columns=[
                     "temp_item_id",
                     "parent_product_id",
@@ -18,8 +18,11 @@ class AddingTransaction:
                     "num_purchased"
                 ]
             )
+        if not "adding_spending_display_df" in st.session_state:
+            st.session_state["adding_spending_display_df"] = None
 
-        self.spending_df = session_state["adding_spending_df"]
+        self.spending_df = st.session_state["adding_spending_df"]
+        self.display_df = st.session_state["adding_spending_display_df"]
         self.db_manager = db_manager
 
         self.spending_time = None
@@ -103,8 +106,8 @@ class AddingTransaction:
             return max(self.spending_df["temp_item_id"])+1
         return 0
 
-    def to_display_df(self):
-        df = self.spending_df.merge(
+    def refresh_display_df(self):
+        df = st.session_state["adding_spending_df"].merge(
             self.db_manager.products.db_data,
             left_on="parent_product_id",
             right_on="product_id",
@@ -126,7 +129,13 @@ class AddingTransaction:
             df["new_item_name"],
             lambda parent, new: parent if not utils.isNone(parent) else new
         )
-        return df[["ID", "Name", "Price Per", "Num Purchased"]]
+        self.display_df = df[["ID", "Name", "Price Per", "Num Purchased"]]
+        st.session_state["adding_spending_display_df"] = self.display_df
+
+    def to_display_df(self):
+        if self.display_df is None:
+            self.refresh_display_df()
+        return self.display_df
 
     def from_display_df(self, edited_df):
         renamed_df = edited_df.rename({
@@ -159,6 +168,8 @@ class AddingTransaction:
         return renamed_df[["temp_item_id", "parent_product_id", "spending_item_id", "new_item_name", "override_price", "num_purchased"]]
 
     def add_transaction_to_db(self):
+        log("Saving transaction, with item df ->")
+        log(self.spending_df)
         ## Add to vendors
         if self.vendor_name is None:
             vendor_id = None

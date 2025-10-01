@@ -126,7 +126,7 @@ def store_transactions_df(transactions_df, snapshot_info, db_manager=None, money
     if db_manager is None:
         db_manager = DatabaseManager()
     for i, row in transactions_df.iterrows():
-        adding = AddingTransaction({}, db_manager)
+        adding = AddingTransaction(db_manager)
         adding.set_spending_date(row["date"])
         adding.set_vendor_name(row["name"])
         adding.set_description(row["description"])
@@ -148,7 +148,7 @@ def store_transactions_df(transactions_df, snapshot_info, db_manager=None, money
             adding.add_transaction_to_db()
 
     if snapshot_info is not None:
-        adding = AddingTransaction({}, db_manager)
+        adding = AddingTransaction(db_manager)
         adding.set_money_store_used(money_store)
         db_manager.db.create_row(
             db_manager.store_snapshots.TABLE,
