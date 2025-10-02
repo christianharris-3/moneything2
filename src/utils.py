@@ -4,12 +4,24 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
 import pandas as pd
+import numpy as np
 import streamlit as st
 import datetime
 
 
 def isNone(value):
     return value is None or (isinstance(value, float) and math.isnan(value))
+
+def death_to_numpy(value):
+    if isinstance(value, np.int64)or isinstance(value, np.int32):
+        return int(value)
+    if isinstance(value, np.float64) or isinstance(value, np.float32):
+        return float(value)
+    if isinstance(value, list):
+        return [death_to_numpy(v) for v in value]
+    if isinstance(value, tuple):
+        return tuple(death_to_numpy(v) for v in value)
+    return value
 
 def force_int_ids(df):
     df = df.copy()
@@ -311,3 +323,18 @@ def get_df_matching_search_term(df, search_term):
         else:
             bools = bools & bools_2.astype(bool)
     return df[bools]
+
+def mode_of_list(lst):
+    mapp = {}
+    for item in lst:
+        if item in mapp:
+            mapp[item] += 1
+        else:
+            mapp[item] = 1
+    max_val = -1
+    max_index = -1
+    for key, val in mapp.items():
+        if val > max_val:
+            max_val = val
+            max_index = key
+    return max_index
