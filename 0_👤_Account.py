@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
 # TODO: HIGH PRIORITY
 #  fix transactions spending info to be correct, and add vendor to message
-
+#  category tree thing
 
 # TODO: MIDDLE PRIORITY
 #  make internal transfers editable in transactions menu

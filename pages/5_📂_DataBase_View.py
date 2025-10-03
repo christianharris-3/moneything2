@@ -202,7 +202,7 @@ def spending_items_table_ui():
             },
         )
     ):
-        st.rerun(scope="fragment")
+        st.rerun()
 
 
 if __name__ == "__main__":

@@ -180,11 +180,12 @@ def transactions_edit_ui(db_manager):
             )
         )
 
-
-        total_cost = sum(filter(
-            lambda num: not utils.isNone(num),
-            spending_display_df["Price Per"] * spending_display_df["Num Purchased"]
-        ))
+        if total_cost == 0:
+            total_cost = sum(filter(
+                lambda num: not utils.isNone(num),
+                st.session_state["adding_spending_df"]["override_price"]
+                * st.session_state["adding_spending_df"]["num_purchased"]
+            ))
         st.divider()
         st.markdown(f"Save Transaction of spending £{total_cost:.2f}")
     else:
