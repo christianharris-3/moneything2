@@ -212,12 +212,26 @@ class SQLDatabase:
             );
             """
         )
+        # self.cursor.execute(
+        #     """
+        #     ALTER TABLE Vendors
+        #     ADD default_category_id INTEGER
+        #     """
+        # )
+        # self.cursor.execute(
+        #     """
+        #     ALTER TABLE Vendors
+        #     ADD default_location_id INTEGER
+        #     """
+        # )
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Vendors(
                 vendor_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 meta_data_id INTEGER,
-                name TEXT
+                name TEXT,
+                default_category_id INTEGER,
+                default_location_id INTEGER
             );
             """
         )

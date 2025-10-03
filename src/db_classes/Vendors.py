@@ -5,7 +5,9 @@ class Vendors(DatabaseTable):
     TABLE = "Vendors"
     COLUMNS = [
         "vendor_id",
-        "name"
+        "name",
+        "default_category_id",
+        "default_location_id"
     ]
     DISPLAY_DF_RENAMED = {
         "vendor_id": "ID",
