@@ -4,6 +4,7 @@ utils.block_if_no_auth()
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.sql_database import SQLDatabase
+import src.streamlit_utils as st_utils
 from src.logger import log
 
 st.set_page_config(page_title="Database - Money Thing", page_icon="📈",layout="wide")
@@ -62,7 +63,7 @@ def user_input_sql():
 def products_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_products_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_products_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -79,7 +80,7 @@ def products_table_ui():
 def vendors_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_vendors_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_vendors_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -92,7 +93,7 @@ def vendors_table_ui():
 def locations_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_locations_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_locations_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -106,7 +107,7 @@ def locations_table_ui():
 def categories_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_categories_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_categories_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -122,7 +123,7 @@ def categories_table_ui():
 def money_stores_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_money_stores_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_money_stores_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -135,7 +136,7 @@ def money_stores_table_ui():
 def snapshot_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_store_snapshots_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_store_snapshots_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -151,7 +152,7 @@ def snapshot_table_ui():
 def internal_transfers_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_internal_transfers_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_internal_transfers_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -167,7 +168,7 @@ def internal_transfers_table_ui():
 def transactions_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_transactions_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_transactions_display_df(),
             {
                 "ID": {"type": "number", "editable": False},
@@ -188,7 +189,7 @@ def transactions_table_ui():
 def spending_items_table_ui():
     db_manager = DatabaseManager()
     if db_manager.save_spending_items_df_changes(
-        utils.data_editor(
+        st_utils.data_editor(
             db_manager.get_spending_items_display_df(),
             {
                 "ID": {"type": "number", "editable": False},

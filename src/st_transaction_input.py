@@ -1,12 +1,11 @@
 import streamlit as st
 from src.adding_transaction import AddingTransaction
 import src.utils as utils
+import src.streamlit_utils as st_utils
 import pandas as pd
 from src.logger import log
 import datetime
 
-
-ITEMS_PER_PAGE = 15
 
 def transaction_input_tab(db_manager):
 
@@ -171,7 +170,7 @@ def transactions_edit_ui(db_manager):
         spending_display_df = adding_spending.to_display_df()
 
         st.session_state["adding_spending_df"] = adding_spending.from_display_df(
-            utils.data_editor(
+            st_utils.data_editor(
                 spending_display_df,
                 {
                     "ID": {"type": "number", "editable": False},
@@ -340,12 +339,12 @@ def list_searched_transactions(db_manager, state):
 
 def ui_list_transactions(db_manager, state, transactions_transfers_df):
     buttons_container = st.container()
-    pages_manager_ui(state, len(transactions_transfers_df))
 
-    transactions_transfers_df["date_obj"] = transactions_transfers_df["date"].apply(utils.string_to_date)
+    transactions_transfers_df["date_obj"] = transactions_transfers_df["date"].apply(
+        utils.string_to_date)
     filtered_df = transactions_transfers_df.sort_values("date_obj", ascending=False)
 
-    filtered_df = filtered_df.iloc[ITEMS_PER_PAGE*(state["page"]-1):ITEMS_PER_PAGE*state["page"]]
+    filtered_df = st_utils.pages_manager_ui(state, filtered_df)
 
     for i, row in filtered_df.iterrows():
         if row["is_internal"]:
@@ -364,31 +363,6 @@ def ui_list_transactions(db_manager, state, transactions_transfers_df):
                 args=("specific", None, row["transaction_id"], False),
                 key=f"transaction_button_{row['transaction_id']}"
             )
-
-def pages_manager_ui(state, num_items):
-    total_pages = num_items//ITEMS_PER_PAGE+1
-
-    if state["page"]>total_pages:
-        state["page"] = 1
-
-    left, middle, right = st.columns([1,1.6,1], width=200, vertical_alignment="center")
-
-    def move_page(state, change):
-        state["page"]+=change
-
-    left.button(
-        "◀️",
-        disabled=state["page"]<=1,
-        on_click=move_page,
-        args=(state, -1)
-    )
-    right.button(
-        "▶️",
-        disabled=state["page"]>=total_pages,
-        on_click=move_page,
-        args=(state, 1)
-    )
-    middle.markdown(f"Page {state['page']}/{total_pages}")
 
 def clear_transaction_input():
     del st.session_state["adding_spending_df"]

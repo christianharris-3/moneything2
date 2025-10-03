@@ -1,7 +1,5 @@
 import math
 from src.logger import log
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid.shared import GridUpdateMode, DataReturnMode
 from pandas.errors import IntCastingNaNError
 import pandas as pd
 import numpy as np
@@ -47,16 +45,6 @@ def filter_df(df, column, value):
             df = df[(df[column[i]] == value[i]) | (pd.isna(df[column[i]]) & pd.isna(value[i]))]
         return df
     return df[(df[column] == value) | (pd.isna(df[column]) & pd.isna(value))]
-
-def double_run():
-    if "has_rerun" not in st.session_state:
-        st.session_state["has_rerun"] = False
-
-    if not st.session_state["has_rerun"]:
-        st.session_state["has_rerun"] = True
-        st.rerun()
-    else:
-        st.session_state["has_rerun"] = False
 
 def is_authenticated() -> bool:
     if "authenticated" not in st.session_state:
@@ -108,83 +96,6 @@ def make_display_inner_joins(*args) -> list[dict]:
 
     return display_inner_joins
 
-
-def data_editor(df, column_config=None, aggrid=False, container=None, num_rows="dynamic"):
-    if column_config is None:
-        column_config = {}
-    if aggrid:
-        return aggrid_data_editor(df, column_config)
-    else:
-        return streamlit_data_editor(df, column_config, container, num_rows=num_rows)
-
-def aggrid_data_editor(df, column_config: dict[str, dict]):
-    grid_options = GridOptionsBuilder.from_dataframe(df)
-    grid_options.configure_selection("multiple", use_checkbox=True)
-    grid_options.configure_auto_height(True)
-
-    for column_title in df.columns:
-        if column_title not in column_config.keys():
-            column_config[column_title] = {}
-
-    for column_title in column_config:
-        config = column_config[column_title]
-        args = {
-            "editable": config.get("editable", True),
-            "filter": config.get("filter", True),
-            "sortable": config.get("sortable", True),
-        }
-        if "options" in config:
-            args["cellEditor"] = "agSelectCellEditor"
-            args["cellEditorParams"] = {"values": config["options"]}
-
-        grid_options.configure_column(
-            column_title,
-            **args
-        )
-    build_options = grid_options.build()
-
-    data_edits = AgGrid(
-        df,
-        gridOptions=build_options,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        data_return_mode=DataReturnMode.AS_INPUT,
-        fit_columns_on_grid_load=True,
-    )
-    return data_edits.data
-
-def streamlit_data_editor(df, column_config: dict[str, dict], container=None, num_rows="dynamic"):
-    if container is None:
-        container = st
-
-    st_column_config = {}
-    for column_title in column_config:
-        config = column_config[column_title]
-        args = {
-            "disabled": not config.pop("editable", True),
-        }
-        type_ = config.pop("type", "column")
-        args.update(config)
-        match type_:
-            case "number":
-                config_obj = st.column_config.NumberColumn(**args)
-            case "select":
-                config_obj = st.column_config.SelectboxColumn(**args)
-            case "boolean":
-                config_obj = st.column_config.CheckboxColumn(**args)
-                df[column_title] = df[column_title].apply(
-                    lambda x: True if x==1 else False
-                )
-            case _:
-                config_obj = st.column_config.Column(**args)
-
-        st_column_config[column_title] = config_obj
-
-    return container.data_editor(
-        df,
-        column_config=st_column_config,
-        hide_index=True,
-        num_rows=num_rows,
-    )
 
 def conform_date_string(input_string: str) -> str:
     date_obj = string_to_date(input_string)
