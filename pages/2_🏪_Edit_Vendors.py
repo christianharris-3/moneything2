@@ -3,6 +3,7 @@ utils.block_if_no_auth()
 
 import streamlit as st
 from src.db_manager import DatabaseManager
+from src.adding_vendor import AddingVendor
 import src.streamlit_utils as st_utils
 from src.st_transaction_input import find_transaction_value
 from src.logger import log
@@ -65,13 +66,14 @@ def vendor_list_ui(db_manager):
     state = st.session_state["vendors_state"]
 
     st.markdown("## Find Vendors")
-    st.text_input("Search Vendors", icon="🔎")
+    search_term = st.text_input("Search Vendors", icon="🔎")
 
     vendors = db_manager.vendors.db_data.copy()
     transactions = db_manager.transactions.db_data.copy()
 
     vendor_container = st.container()
 
+    vendors = utils.get_df_matching_search_term(vendors, search_term)
     vendors = st_utils.pages_manager_ui(state, vendors.sort_values("name"))
 
     vendors = vendors.reset_index(drop=True)
@@ -107,24 +109,58 @@ def vendor_list_ui(db_manager):
     for i, row in vendors.iterrows():
         vendor_container.button(
             row["title"],
-            use_container_width=True
+            use_container_width=True,
+            on_click=load_vendor,
+            args=(db_manager, row)
+
         )
 
+def load_vendor(db_manager, row):
+    adding_vendor = AddingVendor(db_manager)
+    adding_vendor.clear_input()
+
+    st.session_state["vendor_name_input"] = row["name"]
+    st.session_state["selected_vendor_id"] = row["vendor_id"]
+
+    category_row = db_manager.categories.get_db_row(row["default_category_id"])
+    category_name = None
+    if category_row is not None and not utils.isNone(category_row["name"]):
+        category_name = category_row["name"]
+    st.session_state["default_category_input"] = category_name
+
+    location_row = db_manager.categories.get_db_row(row["default_location_id"])
+    location_name = None
+    if location_row is not None and not utils.isNone(location_row["shop_location"]):
+        location_name = location_row["shop_location"]
+    st.session_state["default_location_input"] = location_name
+
+    locations = db_manager.shop_locations.get_filtered_df("vendor_id", row["vendor_id"])
+    for i, r in locations.iterrows():
+        adding_vendor.add_location(r["shop_location"], r["shop_location_id"])
+
+
 def edit_vendor_ui(db_manager):
+    adding_vendor = AddingVendor(db_manager)
 
-    state = st.session_state["vendors_state"]
+    title, clear = st.columns([0.8, 0.2], vertical_alignment="center")
 
-    if state["vendor_id"] is None:
-        st.markdown("### Create Vendor")
+    clear.button(
+        "Clear",
+        on_click=adding_vendor.clear_input,
+        use_container_width=True
+    )
+
+    if st.session_state["selected_vendor_id"] is None:
+        title.markdown("## Create Vendor")
     else:
-        st.markdown(f"### Editing Vendor {state['vendor_id']}")
+        title.markdown(f"## Editing Vendor {st.session_state['selected_vendor_id']}")
 
-    vendor_name = st.text_input(
+    st.text_input(
         "Vendor Name", None,
         key="vendor_name_input"
     )
 
-    locations = db_manager.get_shop_locations(vendor_name)
+    locations = list(adding_vendor.get_df()["name"])
 
     st.selectbox(
         "Default Category",
@@ -132,20 +168,15 @@ def edit_vendor_ui(db_manager):
         index=None,
         key="default_category_input"
     )
-    if len(locations)>0:
-        st.selectbox(
-            "Default Location",
-            locations,
-            index=None,
-            key="default_location_input"
-        )
+    st.selectbox(
+        "Default Location",
+        locations,
+        index=None,
+        key="default_location_input"
+    )
 
 
-
-
-    # st_utils.data_editor(
-    #
-    # )
+    list_vendor_locations_ui(adding_vendor)
     return
 
 
@@ -188,6 +219,40 @@ def edit_vendor_ui(db_manager):
                 st.toast(f"Merged {edit_vendor_name} into {target_vendor}")
 
 
+def list_vendor_locations_ui(adding_vendor):
+    container = st.container(border=True)
+
+    container.markdown("### Locations")
+
+    table = container.container()
+    container.button("Add Location", on_click=adding_vendor.add_location)
+
+    for i, row in adding_vendor.get_df().iterrows():
+        text, delete = table.columns([0.8, 0.2])
+        text.text_input(
+            "Location Name",
+            label_visibility="collapsed",
+            key=f"location_name_input_{i}"
+        )
+        delete.button(
+            "",
+            icon="🗑️",
+            use_container_width=True,
+            on_click=adding_vendor.delete_location,
+            args=(i,),
+            key=f"delete_location_button_{i}"
+        )
+
+    save, view, delete = st.columns([1,1,1])
+
+    if save.button("Save Vendor", use_container_width=True):
+        adding_vendor.save_vendor()
+    if view.button("View Transactions", use_container_width=True):
+        pass
+    if delete.button("Delete Vendor", icon="🗑️", use_container_width=True):
+        pass
+
+
 if __name__ == "__main__":
     log("Loading page 2: Edit Vendors")
 
@@ -199,7 +264,7 @@ if __name__ == "__main__":
             "vendor_id": None,
         }
 
-    st.markdown("# Edit Vendors")
+    st.markdown("# Add/Edit Vendors")
     st.divider()
 
     edit_column,  list_column = st.columns([0.5, 0.5])

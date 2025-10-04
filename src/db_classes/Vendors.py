@@ -12,6 +12,8 @@ class Vendors(DatabaseTable):
     DISPLAY_DF_RENAMED = {
         "vendor_id": "ID",
         "name": "Name",
+        "default_category_id": "Category ID",
+        "default_location_id": "Location ID"
     }
 
     def __init__(self, select_call):
