@@ -1,6 +1,3 @@
-import src.utils as utils
-utils.block_if_no_auth()
-
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.st_transaction_input import transaction_input_tab
@@ -9,7 +6,7 @@ from src.logger import log
 
 st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈",layout="wide")
 
-if __name__ == "__main__":
+def transactions_page_ui():
     log("Loading page 1: Input Transactions")
 
     db_manager = DatabaseManager()
@@ -36,3 +33,8 @@ if __name__ == "__main__":
             st.markdown("Upload Complete!")
 
     # utils.double_run()
+
+if __name__ == "__main__":
+    import src.utils as utils
+    utils.block_if_no_auth()
+    transactions_page_ui()

@@ -55,6 +55,7 @@ def block_if_no_auth():
     if not is_authenticated():
         log("Forcing user back to login page")
         st.switch_page("0_👤_Account.py")
+    print("Session state: ",st.session_state)
 
 def get_user_id():
     if is_authenticated():

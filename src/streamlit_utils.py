@@ -43,6 +43,32 @@ def double_run():
     else:
         st.session_state["has_rerun"] = False
 
+# EXTRA_INCLUDE_UI_CACHE = [
+#     "selected_category"
+# ]
+
+def switch_page(page_path):
+    if "ui_cache" not in st.session_state:
+        st.session_state["ui_cache"] = {
+            page_path: {}
+        }
+
+    to_store = {}
+    for key, val in st.session_state.values():
+        if "input" in key:
+            to_store[key] = val
+
+    st.session_state["ui_cache"][page_path] = to_store
+
+def load_ui_cache(page_path):
+    if "ui_cache" not in st.session_state:
+        return
+
+    if page_path in st.session_state["ui_cache"]:
+        for key, val in st.session_state["ui_cache"][page_path]:
+            st.session_state[key] = val
+
+
 def data_editor(df, column_config=None, aggrid=False, container=None, num_rows="dynamic"):
     if column_config is None:
         column_config = {}

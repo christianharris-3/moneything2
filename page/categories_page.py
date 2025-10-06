@@ -1,11 +1,10 @@
 import src.utils as utils
-utils.block_if_no_auth()
-
+# utils.block_if_no_auth()
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.logger import log
 
-st.set_page_config(page_title="Categories - Money Thing", page_icon="📈",layout="wide")
+# st.set_page_config(page_title="Categories - Money Thing", page_icon="📈",layout="wide")
 
 
 class CategoryTree:
@@ -131,9 +130,7 @@ def delete_category(category_id):
     st.toast(f"Deleted Category {category_id}")
     clear_selection()
 
-
-
-if __name__ == "__main__":
+def categories_page_ui():
     log("Loading page 2: Edit Vendors")
 
     if "selected_category" not in st.session_state:
@@ -148,8 +145,7 @@ if __name__ == "__main__":
 
     st.markdown("# Categories")
 
-    tree, _, specific = st.columns([0.59,0.01,0.4])
-
+    tree, _, specific = st.columns([0.59, 0.01, 0.4])
 
     root = tree.selectbox("Parent Categories", root_nodes)
     tree.divider()
@@ -157,12 +153,11 @@ if __name__ == "__main__":
     trees[root_nodes.index(root)].make_streamlit_ui(tree)
 
     selected = st.session_state["selected_category"]
-    category_row = db_manager.categories.get_db_row(selected)
 
     with specific:
         specific_view = specific.container(border=True)
 
-        title_space, clear = specific_view.columns([0.6,0.3], vertical_alignment="center")
+        title_space, clear = specific_view.columns([0.6, 0.3], vertical_alignment="center")
         if selected is None:
             title_space.markdown("## Create Category")
         else:
@@ -171,7 +166,7 @@ if __name__ == "__main__":
 
         new_category_name = specific_view.text_input("Name", None, key="category_name_input")
 
-        textbox, clear_button = specific_view.columns([0.8,0.2], vertical_alignment="center")
+        textbox, clear_button = specific_view.columns([0.8, 0.2], vertical_alignment="center")
         clear_button.markdown("")
         if clear_button.button("No Parent", use_container_width=True):
             st.session_state["parent_category_input"] = None
@@ -181,7 +176,7 @@ if __name__ == "__main__":
             key="parent_category_input"
         )
 
-        save, add_child, delete = specific_view.columns([1,1,1])
+        save, add_child, delete = specific_view.columns([1, 1, 1])
 
         if selected is not None:
             delete.button(
@@ -203,3 +198,9 @@ if __name__ == "__main__":
             on_click=set_selected_category,
             args=(None, "new category", new_category_name)
         )
+
+
+if __name__ == "__main__":
+    import src.utils as utils
+    utils.block_if_no_auth()
+    categories_page_ui()

@@ -1,6 +1,3 @@
-import src.utils as utils
-utils.block_if_no_auth()
-
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.adding_vendor import AddingVendor
@@ -8,7 +5,7 @@ import src.streamlit_utils as st_utils
 from src.st_transaction_input import find_transaction_value
 from src.logger import log
 
-st.set_page_config(page_title="Vendors - Money Thing", page_icon="📈",layout="wide")
+# st.set_page_config(page_title="Vendors - Money Thing", page_icon="📈",layout="wide")
 
 
 def merge_vendors(db_manager, edit_vendor_id, target_vendor_id, target_location):
@@ -128,7 +125,7 @@ def load_vendor(db_manager, row):
         category_name = category_row["name"]
     st.session_state["default_category_input"] = category_name
 
-    location_row = db_manager.categories.get_db_row(row["default_location_id"])
+    location_row = db_manager.shop_locations.get_db_row(row["default_location_id"])
     location_name = None
     if location_row is not None and not utils.isNone(location_row["shop_location"]):
         location_name = location_row["shop_location"]
@@ -141,6 +138,10 @@ def load_vendor(db_manager, row):
 
 def edit_vendor_ui(db_manager):
     adding_vendor = AddingVendor(db_manager)
+
+    if st.session_state.get("delete_vendor_inputs", False):
+        adding_vendor.clear_input()
+        st.session_state["delete_vendor_inputs"] = False
 
     title, clear = st.columns([0.8, 0.2], vertical_alignment="center")
 
@@ -246,14 +247,15 @@ def list_vendor_locations_ui(adding_vendor):
     save, view, delete = st.columns([1,1,1])
 
     if save.button("Save Vendor", use_container_width=True):
-        adding_vendor.save_vendor()
+        adding_vendor.save_vendor(db_manager)
     if view.button("View Transactions", use_container_width=True):
-        pass
-    if delete.button("Delete Vendor", icon="🗑️", use_container_width=True):
-        pass
+        st.session_state["set_search_query"] = f"vendor:{st.session_state['vendor_name_input']}"
+        st.switch_page("pages/1_💳_Transactions.py")
+    if st.session_state["selected_vendor_id"] is not None and delete.button("Delete Vendor", icon="🗑️", use_container_width=True):
+        adding_vendor.delete_vendor(db_manager)
 
 
-if __name__ == "__main__":
+def edit_vendors_page_ui():
     log("Loading page 2: Edit Vendors")
 
     db_manager = DatabaseManager()
@@ -267,10 +269,15 @@ if __name__ == "__main__":
     st.markdown("# Add/Edit Vendors")
     st.divider()
 
-    edit_column,  list_column = st.columns([0.5, 0.5])
+    edit_column, list_column = st.columns([0.5, 0.5])
     list_column = list_column.container(border=True)
 
     with list_column:
         vendor_list_ui(db_manager)
     with edit_column:
         edit_vendor_ui(db_manager)
+
+if __name__ == "__main__":
+    import src.utils as utils
+    utils.block_if_no_auth()
+    edit_vendors_page_ui()

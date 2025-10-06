@@ -6,14 +6,14 @@ import bcrypt
 
 def st_auth_ui():
     users_df = load_users()
-    _, middle, _ = st.columns([0.4,0.3,0.4])
+    _, middle, _ = st.columns([0.3,0.4,0.3])
 
-    if "auth_input" not in st.session_state:
-        st.session_state["auth_input"] = "login"
+    if "auth_page" not in st.session_state:
+        st.session_state["auth_page"] = "login"
 
     with middle.container(border=True):
 
-        if st.session_state["auth_input"] == "login":
+        if st.session_state["auth_page"] == "login":
             if st.session_state["authenticated"]:
                 logged_in_ui(users_df)
             else:
@@ -65,7 +65,7 @@ def login_ui(users_df):
 
     left.markdown("### Login")
     if right.button("Register", use_container_width=True):
-        st.session_state["auth_input"] = "register"
+        st.session_state["auth_page"] = "register"
         st.rerun()
     username = st.text_input("Username", key="login_username_input")
     password = st.text_input("Password", type="password", key="login_password_input")
@@ -85,7 +85,7 @@ def register_ui(users_df):
 
     left.markdown("### Register")
     if right.button("Login", use_container_width=True, key="swap_to_login_ui_button"):
-        st.session_state["auth_input"] = "login"
+        st.session_state["auth_page"] = "login"
         st.rerun()
     username = st.text_input("Username", key="register_username_input")
     password1 = st.text_input("Password", type="password", key="register_password_1_input")
@@ -99,7 +99,7 @@ def register_ui(users_df):
             st.toast("Username already in use, please choose another", icon="⛔")
         else:
             register_user(username, password1)
-            st.session_state["auth_input"] = "login"
+            st.session_state["auth_page"] = "login"
             st.toast("Account Registered", icon="✔️")
             st.rerun()
 

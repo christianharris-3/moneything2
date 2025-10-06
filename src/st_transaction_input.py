@@ -36,11 +36,17 @@ def transaction_input_tab(db_manager):
         )
 
         if state["search_mode"]:
+            set_search = st.session_state.get("set_search_query", None)
+            if set_search is not None:
+                st.session_state["transaction_search_input"] = set_search
+                st.session_state["set_search_query"] = None
+
             state["search_term"] = ui_section.text_input(
                 "Search",
                 label_visibility="collapsed",
                 icon="🔎",
-                placeholder="Search Transactions"
+                placeholder="Search Transactions",
+                key="transaction_search_input"
             )
 
             if mode_toggle.button("📅"):
@@ -147,19 +153,19 @@ def transactions_edit_ui(db_manager):
     if not adding_spending.is_income:
         st.markdown("## Items")
 
-        if "product_selection" not in st.session_state:
-            st.session_state["product_selection"] = None
+        if "product_selection_input" not in st.session_state:
+            st.session_state["product_selection_input"] = None
 
         selected_product = st.selectbox(
             "Add Item",
             options=db_manager.get_all_products(adding_spending.vendor_name),
-            accept_new_options=True, index=None, key="product_selection"
+            accept_new_options=True, index=None, key="product_selection_input"
         )
 
         def add_item_button_press(adding_spending_obj, selected_option):
             adding_spending_obj.add_product(selected_option)
             adding_spending_obj.refresh_display_df()
-            del st.session_state["product_selection"]
+            del st.session_state["product_selection_input"]
 
         st.button(
             "Add Item",
