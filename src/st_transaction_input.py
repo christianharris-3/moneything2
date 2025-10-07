@@ -76,7 +76,6 @@ def transaction_input_tab(db_manager):
                 st.rerun()
 
         # st.divider()
-        print("STATE IS",state)
         if state["search_mode"]:
             if state["depth"] == "transactions":
                 list_searched_transactions(db_manager, state)
@@ -198,10 +197,16 @@ def transactions_edit_ui(db_manager):
                 * st.session_state["adding_spending_df"]["num_purchased"]
             ))
         st.divider()
-        st.markdown(f"Save Transaction of spending £{total_cost:.2f}")
+        message = f"Save Transaction of spending £{total_cost:.2f}"
+        if not utils.isNone(adding_spending.vendor_name):
+            message += f" at {adding_spending.vendor_name}"
+        st.markdown(message)
     else:
         st.divider()
-        st.markdown(f"Save Income of £{total_cost:.2f}")
+        message = f"Save Income of £{total_cost:.2f}"
+        if not utils.isNone(adding_spending.vendor_name):
+            message+=f" from {adding_spending.vendor_name}"
+        st.markdown(message)
     if st.button("Save Transaction"):
         adding_spending.add_transaction_to_db()
         st.session_state["delete_transaction_inputs"] = True

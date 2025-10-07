@@ -31,7 +31,8 @@ def logged_in_ui(users_df):
     if st.button("Change Password", width="stretch"):
         change_password_ui(user_row)
     if st.button("Change Username", width="stretch"):
-        change_username_ui(user_row)
+        used_usernames = list(users_df["username"])
+        change_username_ui(user_row, used_usernames)
 
 @st.dialog("Change Password")
 def change_password_ui(user_row):
@@ -52,10 +53,12 @@ def change_password_ui(user_row):
             st.rerun()
 
 @st.dialog("Change Username")
-def change_username_ui(user_row):
+def change_username_ui(user_row, used_usernames):
     new_username = st.text_input("New Username")
     if new_username != "":
-        if st.button("Change Username"):
+        if new_username.lower() in map(lambda name: name.lower(), used_usernames):
+            st.markdown("Username Already Used")
+        elif st.button("Change Username"):
             st.toast("Username Changed!", icon="✔️")
             change_username(user_row["user_id"], new_username)
             st.rerun()

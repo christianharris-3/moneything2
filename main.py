@@ -89,9 +89,8 @@ if __name__ == "__main__":
     pg.run()
 
 # TODO: HIGH PRIORITY
-#  fix transactions spending info to be correct, and add vendor to message
-#  Add table thing for editing locations
-#  make rest of vendors ui work
+#  add vendor merging back to vendor menu
+#  improve edit money store menu
 
 # TODO: MIDDLE PRIORITY
 #  make internal transfers editable in transactions menu
