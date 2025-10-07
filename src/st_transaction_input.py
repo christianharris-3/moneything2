@@ -345,6 +345,7 @@ def list_searched_transactions(db_manager, state):
 
 def ui_list_transactions(db_manager, state, transactions_transfers_df):
     buttons_container = st.container()
+    transactions_transfers_df = transactions_transfers_df.copy()
 
     transactions_transfers_df["date_obj"] = transactions_transfers_df["date"].apply(
         utils.string_to_date)

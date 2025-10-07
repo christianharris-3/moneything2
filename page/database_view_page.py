@@ -3,8 +3,8 @@ from src.db_manager import DatabaseManager
 from src.sql_database import SQLDatabase
 import src.streamlit_utils as st_utils
 from src.logger import log
+import src.utils as utils
 
-st.set_page_config(page_title="Database - Money Thing", page_icon="📈",layout="wide")
 
 @st.fragment
 def user_input_sql():
@@ -180,7 +180,7 @@ def transactions_table_ui():
             },
         )
     ):
-        st.rerun(scope="fragment")
+        st.rerun()
 
 @st.fragment
 def spending_items_table_ui():
@@ -203,6 +203,8 @@ def spending_items_table_ui():
         st.rerun()
 
 def database_view_page_ui():
+    utils.block_if_no_auth()
+    st.set_page_config(page_title="Database - Money Thing", page_icon="📈", layout="wide")
     log("Loading page 3: Database View")
 
     st.markdown("## Database Tables")
@@ -243,7 +245,5 @@ def database_view_page_ui():
             spending_items_table_ui()
 
 if __name__ == "__main__":
-    import src.utils as utils
-    utils.block_if_no_auth()
     database_view_page_ui()
 

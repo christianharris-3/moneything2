@@ -3,10 +3,12 @@ from src.db_manager import DatabaseManager
 from src.st_transaction_input import transaction_input_tab
 from src.pdf_reader import upload_pdf
 from src.logger import log
+import src.utils as utils
 
-st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈",layout="wide")
 
 def transactions_page_ui():
+    utils.block_if_no_auth()
+    st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈", layout="wide")
     log("Loading page 1: Input Transactions")
 
     db_manager = DatabaseManager()
@@ -35,6 +37,4 @@ def transactions_page_ui():
     # utils.double_run()
 
 if __name__ == "__main__":
-    import src.utils as utils
-    utils.block_if_no_auth()
     transactions_page_ui()

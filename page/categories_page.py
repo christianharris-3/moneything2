@@ -1,11 +1,7 @@
 import src.utils as utils
-# utils.block_if_no_auth()
 import streamlit as st
 from src.db_manager import DatabaseManager
 from src.logger import log
-
-# st.set_page_config(page_title="Categories - Money Thing", page_icon="📈",layout="wide")
-
 
 class CategoryTree:
     def __init__(self, category_row):
@@ -131,6 +127,8 @@ def delete_category(category_id):
     clear_selection()
 
 def categories_page_ui():
+    utils.block_if_no_auth()
+    st.set_page_config(page_title="Categories - Money Thing", page_icon="📈", layout="wide")
     log("Loading page 2: Edit Vendors")
 
     if "selected_category" not in st.session_state:
@@ -201,6 +199,4 @@ def categories_page_ui():
 
 
 if __name__ == "__main__":
-    import src.utils as utils
-    utils.block_if_no_auth()
     categories_page_ui()

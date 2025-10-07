@@ -1,3 +1,4 @@
+import src.utils as utils
 import src.streamlit_utils as st_utils
 from src.db_manager import DatabaseManager
 from src.add_to_db import add_money_store, add_internal_transfer
@@ -6,6 +7,8 @@ import streamlit as st
 from src.logger import log
 
 def money_stores_page_ui():
+    utils.block_if_no_auth()
+    st.set_page_config(page_title="Money Store - Money Thing", page_icon="📈", layout="wide")
     log("Loading page 4: Money Stores")
 
     db_manager = DatabaseManager()
@@ -60,6 +63,4 @@ def money_stores_page_ui():
     st_utils.double_run()
 
 if __name__ == "__main__":
-    import src.utils as utils
-    utils.block_if_no_auth()
     money_stores_page_ui()

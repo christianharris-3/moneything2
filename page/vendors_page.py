@@ -1,12 +1,10 @@
 import streamlit as st
+import src.utils as utils
 from src.db_manager import DatabaseManager
 from src.adding_vendor import AddingVendor
 import src.streamlit_utils as st_utils
 from src.st_transaction_input import find_transaction_value
 from src.logger import log
-
-# st.set_page_config(page_title="Vendors - Money Thing", page_icon="📈",layout="wide")
-
 
 def merge_vendors(db_manager, edit_vendor_id, target_vendor_id, target_location):
     # convert shop locations to link to new vendor id + create new shop location
@@ -177,7 +175,7 @@ def edit_vendor_ui(db_manager):
     )
 
 
-    list_vendor_locations_ui(adding_vendor)
+    list_vendor_locations_ui(db_manager, adding_vendor)
     return
 
 
@@ -220,7 +218,7 @@ def edit_vendor_ui(db_manager):
                 st.toast(f"Merged {edit_vendor_name} into {target_vendor}")
 
 
-def list_vendor_locations_ui(adding_vendor):
+def list_vendor_locations_ui(db_manager, adding_vendor):
     container = st.container(border=True)
 
     container.markdown("### Locations")
@@ -250,12 +248,15 @@ def list_vendor_locations_ui(adding_vendor):
         adding_vendor.save_vendor(db_manager)
     if view.button("View Transactions", use_container_width=True):
         st.session_state["set_search_query"] = f"vendor:{st.session_state['vendor_name_input']}"
-        st.switch_page("pages/1_💳_Transactions.py")
+        st.session_state["switch_page"] = "transactions"
+        st.rerun()
     if st.session_state["selected_vendor_id"] is not None and delete.button("Delete Vendor", icon="🗑️", use_container_width=True):
         adding_vendor.delete_vendor(db_manager)
 
 
 def edit_vendors_page_ui():
+    utils.block_if_no_auth()
+    st.set_page_config(page_title="Vendors - Money Thing", page_icon="📈", layout="wide")
     log("Loading page 2: Edit Vendors")
 
     db_manager = DatabaseManager()
@@ -278,6 +279,4 @@ def edit_vendors_page_ui():
         edit_vendor_ui(db_manager)
 
 if __name__ == "__main__":
-    import src.utils as utils
-    utils.block_if_no_auth()
     edit_vendors_page_ui()
