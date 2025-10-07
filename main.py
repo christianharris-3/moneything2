@@ -1,5 +1,6 @@
 import streamlit as st
 import src.utils as utils
+import src.streamlit_utils as st_utils
 from src.authentication import st_auth_ui
 from page.transactions_page import transactions_page_ui
 from page.vendors_page import edit_vendors_page_ui
@@ -20,23 +21,40 @@ def run_if_auth(func):
     else:
         st.switch_page(pages_dict["account"])
 
+def load_page(page_key):
+    if "current_page_key" not in st.session_state:
+        st.session_state["current_page_key"] = page_key
+
+    if st.session_state["current_page_key"] != page_key:
+        st_utils.load_ui_cache(page_key)
+        st.session_state["current_page_key"] = page_key
+
+def make_page(page_func, check_auth=True):
+    page_key = str(page_func)
+    load_page(page_key)
+    if check_auth:
+        run_if_auth(page_func)
+    else:
+        page_func()
+    st_utils.store_to_ui_cache(page_key)
+
 def Account():
-    st_auth_ui()
+    make_page(st_auth_ui, False)
 
 def Transactions():
-    run_if_auth(transactions_page_ui)
+    make_page(transactions_page_ui)
 
 def Vendors():
-    run_if_auth(edit_vendors_page_ui)
+    make_page(edit_vendors_page_ui)
 
 def Categories():
-    run_if_auth(categories_page_ui)
+    make_page(categories_page_ui)
 
 def Money_Stores():
-    run_if_auth(money_stores_page_ui)
+    make_page(money_stores_page_ui)
 
 def DataBase_View():
-    run_if_auth(database_view_page_ui)
+    make_page(database_view_page_ui)
 
 pages_dict = {
     "account": st.Page(Account, icon="👤", title="Money Thing"),

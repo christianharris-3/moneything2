@@ -47,25 +47,24 @@ def double_run():
 #     "selected_category"
 # ]
 
-def switch_page(page_path):
+def store_to_ui_cache(page_key):
     if "ui_cache" not in st.session_state:
         st.session_state["ui_cache"] = {
-            page_path: {}
+            page_key: {}
         }
-
     to_store = {}
-    for key, val in st.session_state.values():
+    for key, val in st.session_state.items():
         if "input" in key:
             to_store[key] = val
 
-    st.session_state["ui_cache"][page_path] = to_store
+    st.session_state["ui_cache"][page_key] = to_store
 
-def load_ui_cache(page_path):
+def load_ui_cache(page_key):
     if "ui_cache" not in st.session_state:
         return
 
-    if page_path in st.session_state["ui_cache"]:
-        for key, val in st.session_state["ui_cache"][page_path]:
+    if page_key in st.session_state["ui_cache"]:
+        for key, val in st.session_state["ui_cache"][page_key].items():
             st.session_state[key] = val
 
 

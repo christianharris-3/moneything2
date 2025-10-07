@@ -61,7 +61,7 @@ def vendor_list_ui(db_manager):
     state = st.session_state["vendors_state"]
 
     st.markdown("## Find Vendors")
-    search_term = st.text_input("Search Vendors", icon="🔎")
+    search_term = st.text_input("Search Vendors", icon="🔎", key="vendor_search_input")
 
     vendors = db_manager.vendors.db_data.copy()
     transactions = db_manager.transactions.db_data.copy()

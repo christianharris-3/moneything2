@@ -78,6 +78,7 @@ def login_ui(users_df):
             log(f"Logging In with User ID: {user_id}")
             st.session_state["authenticated"] = True
             st.session_state["current_user_id"] = user_id
+            # st_utils.switch_page
             st.session_state["switch_page"] = "transactions"
             st.rerun()
 

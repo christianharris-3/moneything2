@@ -8,7 +8,6 @@ import datetime
 
 
 def transaction_input_tab(db_manager):
-
     edit_column,_, list_column = st.columns([0.59,0.01,0.4])
     list_column = list_column.container(border=True)
     with list_column:
@@ -24,6 +23,13 @@ def transaction_input_tab(db_manager):
                 "page": 1
             }
 
+        set_search = st.session_state.get("set_search_query", None)
+        if set_search is not None:
+            st.session_state["transaction_search_input"] = set_search
+            st.session_state["transaction_viewer_date"]["search_mode"] = True
+            st.session_state["transaction_viewer_date"]["page"] = 1
+            st.session_state["set_search_query"] = None
+
         state = st.session_state["transaction_viewer_date"]
         ui_section, back_button, mode_toggle  = st.columns([1.3,0.7,0.25])
 
@@ -36,10 +42,6 @@ def transaction_input_tab(db_manager):
         )
 
         if state["search_mode"]:
-            set_search = st.session_state.get("set_search_query", None)
-            if set_search is not None:
-                st.session_state["transaction_search_input"] = set_search
-                st.session_state["set_search_query"] = None
 
             state["search_term"] = ui_section.text_input(
                 "Search",
