@@ -6,29 +6,32 @@ import pandas as pd
 from src.logger import log
 import datetime
 
+def load_transaction_view_state():
+    if "transaction_viewer_date" not in st.session_state:
+        st.session_state["transaction_viewer_date"] = {
+            "depth": "years",
+            "timestamp": None,
+            "transaction_id": None,
+            "search_mode": False,
+            "search_term": None,
+            "page": 1,
+            "is_internal": False
+        }
+
+    set_search = st.session_state.get("set_search_query", None)
+    if set_search is not None:
+        st.session_state["transaction_search_input"] = set_search
+        st.session_state["transaction_viewer_date"]["search_mode"] = True
+        st.session_state["transaction_viewer_date"]["page"] = 1
+        st.session_state["transaction_viewer_date"]["depth"] = "transactions"
+        st.session_state["set_search_query"] = None
 
 def transaction_input_tab(db_manager):
+    load_transaction_view_state()
     edit_column,_, list_column = st.columns([0.59,0.01,0.4])
     list_column = list_column.container(border=True)
     with list_column:
         st.markdown("## Existing Transactions")
-
-        if "transaction_viewer_date" not in st.session_state:
-            st.session_state["transaction_viewer_date"] = {
-                "depth": "years",
-                "timestamp": None,
-                "transaction_id": None,
-                "search_mode": False,
-                "search_term": None,
-                "page": 1
-            }
-
-        set_search = st.session_state.get("set_search_query", None)
-        if set_search is not None:
-            st.session_state["transaction_search_input"] = set_search
-            st.session_state["transaction_viewer_date"]["search_mode"] = True
-            st.session_state["transaction_viewer_date"]["page"] = 1
-            st.session_state["set_search_query"] = None
 
         state = st.session_state["transaction_viewer_date"]
         ui_section, back_button, mode_toggle  = st.columns([1.3,0.7,0.25])
@@ -73,6 +76,7 @@ def transaction_input_tab(db_manager):
                 st.rerun()
 
         # st.divider()
+        print("STATE IS",state)
         if state["search_mode"]:
             if state["depth"] == "transactions":
                 list_searched_transactions(db_manager, state)
