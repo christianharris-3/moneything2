@@ -100,7 +100,7 @@ def transaction_input_tab(db_manager):
 
 def transactions_edit_ui(db_manager):
     if st.session_state.get("delete_transaction_inputs", False):
-        clear_transaction_input()
+        clear_transaction_input(db_manager)
         st.session_state["delete_transaction_inputs"] = False
     editing_transaction_id = st.session_state.get("editing_transaction_id", -1)
     title, clear_button = st.columns([0.8, 0.2])
@@ -109,7 +109,7 @@ def transactions_edit_ui(db_manager):
     else:
         title.markdown(f"## Editing Transaction with id {editing_transaction_id}")
     clear_button.write("")
-    clear_button.button("Clear", on_click=clear_transaction_input, use_container_width=True)
+    clear_button.button("Clear", on_click=clear_transaction_input, args=(db_manager,), use_container_width=True)
     left_input, right_input = st.columns(2)
     adding_spending = AddingTransaction(db_manager)
     adding_spending.set_vendor_name(
@@ -383,7 +383,7 @@ def ui_list_transactions(db_manager, state, transactions_transfers_df):
                 key=f"transaction_button_{row['transaction_id']}"
             )
 
-def clear_transaction_input():
+def clear_transaction_input(db_manager):
     del st.session_state["adding_spending_df"]
     del st.session_state["adding_spending_display_df"]
     st.session_state["editing_transaction_id"] = -1
@@ -392,10 +392,15 @@ def clear_transaction_input():
     st.session_state["date_input"] = datetime.date.today()
     st.session_state["time_input"] = None
     st.session_state["category_input"] = None
-    st.session_state["money_store_input"] = 0
     st.session_state["is_income_input"] = "Spending"
     st.session_state["money_input"] = None
     st.session_state["description_input"] = None
+
+    index, money_stores = get_most_used_money_store(db_manager)
+    if len(money_stores) > 0:
+        st.session_state["money_store_input"] = money_stores[0]
+    else:
+        st.session_state["money_store_input"] = None
 
 def load_transaction_input(db_manager, transaction_id):
     log(f"Editing Transaction with id, {transaction_id}")
