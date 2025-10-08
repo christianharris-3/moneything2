@@ -115,7 +115,9 @@ def transactions_edit_ui(db_manager):
     adding_spending.set_vendor_name(
         left_input.selectbox(
             "Vendor Name", db_manager.get_all_vendor_names(),
-            accept_new_options=True, index=None, key="vendor_input")
+            accept_new_options=True, index=None, key="vendor_input",
+            on_change=vendor_selected, args=(db_manager, )
+        )
     )
     selected_shop_locations = db_manager.get_shop_locations(adding_spending.vendor_name)
     adding_spending.set_shop_location(
@@ -217,7 +219,6 @@ def get_most_used_money_store(db_manager):
     db = db_manager.transactions.db_data.copy()
     db["date_obj"] = db["date"].apply(utils.string_to_date)
     filtered_df = db.sort_values("date_obj", ascending=False)
-    # filtered_df = filtered_df.iloc[:10]
     money_stores = db_manager.money_stores.db_data
     names = list(filtered_df["money_store_id"])
     zipped = list(zip(money_stores["money_store_id"], money_stores["name"]))
@@ -391,7 +392,7 @@ def clear_transaction_input():
     st.session_state["date_input"] = datetime.date.today()
     st.session_state["time_input"] = None
     st.session_state["category_input"] = None
-    st.session_state["money_store_input"] = None
+    st.session_state["money_store_input"] = 0
     st.session_state["is_income_input"] = "Spending"
     st.session_state["money_input"] = None
     st.session_state["description_input"] = None
@@ -577,5 +578,25 @@ def get_transaction_and_transfer_df(db_manager):
 
     return combined
 
+def vendor_selected(db_manager):
+    vendor = st.session_state["vendor_input"]
+    filtered_df = db_manager.vendors.get_filtered_df("name", vendor)
+    if len(filtered_df) == 0:
+        return
+    vendor_row = filtered_df.iloc[0]
+
+    if st.session_state.get("location_input", None) is None:
+        location_row = db_manager.shop_locations.get_db_row(
+            vendor_row["default_location_id"]
+        )
+        if location_row is not None:
+            st.session_state["location_input"] = location_row["shop_location"]
+
+    if st.session_state.get("category_input", None) is None:
+        category_row = db_manager.categories.get_db_row(
+            vendor_row["default_category_id"]
+        )
+        if category_row is not None:
+            st.session_state["category_input"] = category_row["name"]
 
 

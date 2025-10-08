@@ -91,9 +91,14 @@ if __name__ == "__main__":
 # TODO: HIGH PRIORITY
 #  add vendor merging back to vendor menu
 #  improve edit money store menu
+#  re-add merging transactions
+#  make internal transfers editable in transactions menu
+#  fix categories input being fucked
+#  fix money store becoming none when clear() is run
+#  make selecting a vendor auto put its defaults in
 
 # TODO: MIDDLE PRIORITY
-#  make internal transfers editable in transactions menu
+#  make default location/category auto set based on a transaction
 #  add pages at bottom to all transactions lists when len items > 15 etc
 #  add pygame image generator to visualize spending per category
 
