@@ -94,8 +94,6 @@ if __name__ == "__main__":
 #  re-add merging transactions
 #  make internal transfers editable in transactions menu
 #  fix categories input being fucked
-#  fix money store becoming none when clear() is run
-#  make selecting a vendor auto put its defaults in
 
 # TODO: MIDDLE PRIORITY
 #  make default location/category auto set based on a transaction

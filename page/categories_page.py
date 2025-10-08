@@ -36,6 +36,15 @@ class CategoryTree:
             for i, child in enumerate(self.children):
                 child.make_streamlit_ui(columns[i])
 
+    def search_in_tree(self, search_term, exact=False):
+        if (not exact and search_term.lower() in self.category_name) or (exact and search_term == self.category_name):
+            return True
+        for child in self.children:
+            if child.search_in_tree(search_term, exact):
+                return True
+        return False
+
+
     def __str__(self):
         child_strs = [str(child) for child in self.children]
         return f"<CategoryTree ({self.category_name}): [{', '.join(child_strs)}]>"
@@ -108,13 +117,18 @@ def save_category(category_id, name, parent_name):
             )
             st.toast(f"Added new '{name}' Category with parent '{parent_name}'")
     else:
-        db_manager.db.update_row(
-            db_manager.categories.TABLE,
-            save_data,
-            "category_id",
-            category_id
-        )
+        update_category(db_manager, category_id, save_data)
         st.toast(f"Updated ID {category_id} to '{name}' Category with parent '{parent_name}'")
+
+    st.session_state["just_saved_category"] = name
+
+def update_category(db_manager, category_id, save_data):
+    db_manager.db.update_row(
+        db_manager.categories.TABLE,
+        save_data,
+        "category_id",
+        category_id
+    )
 
 def delete_category(category_id):
     db_manager = DatabaseManager()
@@ -145,10 +159,33 @@ def categories_page_ui():
 
     tree, _, specific = st.columns([0.59, 0.01, 0.4])
 
-    root = tree.selectbox("Parent Categories", root_nodes)
+    select, search = tree.columns([1, 1])
+    def delete_session_val(key):
+        st.session_state[key] = None
+    root_category = select.selectbox(
+        "Root Categories",
+        root_nodes,
+        on_change=delete_session_val, args=("search_all_categories_input",),
+        key="search_root_categories_input"
+    )
+    specific_category = search.selectbox(
+        "All Categories",
+        db_manager.get_all_categories(),
+        on_change=delete_session_val, args=("search_root_categories_input",),
+        key="search_all_categories_input",
+        index=None
+    )
+
     tree.divider()
 
-    trees[root_nodes.index(root)].make_streamlit_ui(tree)
+    if root_category is not None:
+        trees[root_nodes.index(root_category)].make_streamlit_ui(tree)
+    else:
+        for root_node in trees:
+            if root_node.search_in_tree(specific_category, exact=True):
+                root_node.make_streamlit_ui(tree)
+                break
+
 
     selected = st.session_state["selected_category"]
 
@@ -157,12 +194,20 @@ def categories_page_ui():
 
         title_space, clear = specific_view.columns([0.6, 0.3], vertical_alignment="center")
         if selected is None:
-            title_space.markdown("## Create Category")
+            title_space.markdown("## New Category")
         else:
             title_space.markdown(f"## Category {selected}")
         clear.button("Clear", use_container_width=True, on_click=clear_selection)
 
-        new_category_name = specific_view.text_input("Name", None, key="category_name_input")
+        specific_view.text_input("Name", None, key="category_name_input")
+        if st.session_state.get("just_saved_category", None) is not None:
+            if st.session_state["just_saved_category"] != st.session_state["category_name_input"]:
+                update_category(
+                    db_manager,
+                    selected,
+                    {"name": st.session_state["category_name_input"]}
+                )
+            st.session_state["just_saved_category"] = None
 
         textbox, clear_button = specific_view.columns([0.8, 0.2], vertical_alignment="center")
         clear_button.markdown("")
@@ -177,6 +222,14 @@ def categories_page_ui():
         save, add_child, delete = specific_view.columns([1, 1, 1])
 
         if selected is not None:
+            row = db_manager.categories.get_db_row(selected)
+            if row is not None:
+                add_child.button(
+                    "Add Child",
+                    use_container_width=True,
+                    on_click=set_selected_category,
+                    args=(None, "new category", row["name"])
+                )
             delete.button(
                 "Delete",
                 use_container_width=True,
@@ -188,13 +241,7 @@ def categories_page_ui():
             "Save Category",
             use_container_width=True,
             on_click=save_category,
-            args=(selected, new_category_name, parent_category_name)
-        )
-        add_child.button(
-            "Add Child",
-            use_container_width=True,
-            on_click=set_selected_category,
-            args=(None, "new category", new_category_name)
+            args=(selected, st.session_state["category_name_input"], parent_category_name)
         )
 
 
