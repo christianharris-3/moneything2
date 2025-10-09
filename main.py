@@ -93,7 +93,6 @@ if __name__ == "__main__":
 #  improve edit money store menu
 #  re-add merging transactions
 #  make internal transfers editable in transactions menu
-#  fix categories input being fucked
 
 # TODO: MIDDLE PRIORITY
 #  make default location/category auto set based on a transaction

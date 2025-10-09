@@ -94,22 +94,47 @@ def transaction_input_tab(db_manager):
         else:
             transactions_listing_ui(db_manager, state)
 
-    with edit_column:
-        transactions_edit_ui(db_manager)
+    if "transaction_or_transfer_toggle" not in st.session_state:
+        st.session_state["transaction_or_transfer_toggle"] = "transaction"
 
+    with edit_column:
+        if st.session_state["transaction_or_transfer_toggle"] == "transaction":
+            transactions_edit_ui(db_manager)
+        else:
+            internal_transfers_edit_ui(db_manager)
+
+def set_transaction_or_transfer_toggle(val):
+    st.session_state["transaction_or_transfer_toggle"] = val
 
 def transactions_edit_ui(db_manager):
     if st.session_state.get("delete_transaction_inputs", False):
         clear_transaction_input(db_manager)
         st.session_state["delete_transaction_inputs"] = False
+
     editing_transaction_id = st.session_state.get("editing_transaction_id", -1)
-    title, clear_button = st.columns([0.8, 0.2])
+
     if editing_transaction_id == -1:
+        title, switch_button, clear_button = st.columns([0.6, 0.25, 0.15])
+
         title.markdown("## Add Transaction")
+
+        switch_button.write("")
+        switch_button.button(
+            "Internal Transfer",
+            on_click=set_transaction_or_transfer_toggle,
+            args=("internal_transfer",),
+            use_container_width=True
+        )
     else:
+        title, clear_button = st.columns([0.85, 0.15])
+
         title.markdown(f"## Editing Transaction with id {editing_transaction_id}")
+
     clear_button.write("")
     clear_button.button("Clear", on_click=clear_transaction_input, args=(db_manager,), use_container_width=True)
+
+
+
     left_input, right_input = st.columns(2)
     adding_spending = AddingTransaction(db_manager)
     adding_spending.set_vendor_name(
@@ -214,6 +239,53 @@ def transactions_edit_ui(db_manager):
         st.session_state["delete_transaction_inputs"] = True
         st.toast("Transaction Saved!")
         st.rerun()
+
+def internal_transfers_edit_ui(db_manager):
+
+    editing_transfer_id = st.session_state.get("editing_transaction_id", -1)
+
+    if editing_transfer_id == -1:
+        title, switch_button, clear_button = st.columns([0.65, 0.20, 0.15])
+
+        title.markdown("## Add Internal Transfer")
+
+        switch_button.write("")
+        switch_button.button(
+            "Transaction",
+            on_click=set_transaction_or_transfer_toggle,
+            args=("transaction",),
+            use_container_width=True
+        )
+    else:
+        title, clear_button = st.columns([0.85, 0.15])
+
+        title.markdown(f"## Editing Transaction with id {editing_transfer_id}")
+
+    clear_button.write("")
+    clear_button.button("Clear", on_click=clear_internal_transfer_input,use_container_width=True)
+
+    ## inputs
+
+    money_stores = db_manager.get_all_money_stores()
+
+    left_input, right_input = st.columns(2)
+
+    left_input.selectbox("Source Money Store", money_stores,
+                         key="source_money_store_input")
+
+    right_input.selectbox("Target Money Store", money_stores,
+                          key="target_money_store_input")
+
+    left_input.date_input("Transfer Date", key="transfer_date_input")
+
+    right_input.time_input("Transfer Time", key="transfer_time_input")
+
+    st.number_input("Money Transferred", key="internal_money_transferred_input")
+
+    st.markdown("")
+    if st.button("Save Internal Transfer"):
+        st.markdown("please implement this save button")
+
 
 def get_most_used_money_store(db_manager):
     db = db_manager.transactions.db_data.copy()
@@ -326,7 +398,8 @@ def create_view_transaction_ui(db_manager, transaction_row):
         load_transaction_input(db_manager, transaction_row["transaction_id"])
     if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
         delete_transaction(db_manager, transaction_row["transaction_id"])
-        click_ui_nav_button("days")
+        click_ui_nav_button("transactions")
+        st.toast("Deleted Transaction", icon="🗑️")
 
 def create_view_internal_transfer_ui(db_manager, transaction_row):
     st.metric("Source Money Store", transaction_row["source_store"])
@@ -343,11 +416,12 @@ def create_view_internal_transfer_ui(db_manager, transaction_row):
 
 
     cols = st.columns([1, 1])
-    if cols[0].button("Edit", use_container_width=True, icon="✏️", disabled=True):
-        load_transaction_input(db_manager, transaction_row["transfer_id"])
+    if cols[0].button("Edit", use_container_width=True, icon="✏️"):
+        load_internal_transfer_input(db_manager, transaction_row["transfer_id"])
     if cols[1].button("Delete", use_container_width=True, icon="🗑️"):
         delete_internal_transfer(db_manager, transaction_row["transfer_id"])
-        click_ui_nav_button("days")
+        click_ui_nav_button("transactions")
+        st.toast("Deleted Internal Transfer", icon="🗑️")
 
 
 def list_searched_transactions(db_manager, state):
@@ -402,12 +476,14 @@ def clear_transaction_input(db_manager):
     else:
         st.session_state["money_store_input"] = None
 
+def noneify(val):
+    if utils.isNone(val): return None
+    return val
+
 def load_transaction_input(db_manager, transaction_id):
     log(f"Editing Transaction with id, {transaction_id}")
     row = db_manager.transactions.get_db_row(transaction_id)
-    def noneify(val):
-        if utils.isNone(val): return None
-        return val
+    st.session_state["transaction_or_transfer_toggle"] = "transaction"
     st.session_state["vendor_input"] = noneify(row["vendor_name"])
     st.session_state["location_input"] = noneify(row["shop_location"])
     st.session_state["date_input"] = utils.string_to_date(noneify(row["date"]))
@@ -438,6 +514,23 @@ def load_transaction_input(db_manager, transaction_id):
     adding_spending = AddingTransaction(db_manager)
     adding_spending.refresh_display_df()
 
+def clear_internal_transfer_input():
+    st.session_state["editing_transaction_id"] = -1
+    st.session_state["target_money_store_input"] = None
+    st.session_state["source_money_store_input"] = None
+    st.session_state["transfer_date_input"] = datetime.date.today()
+    st.session_state["transfer_time_input"] = None
+    st.session_state["internal_money_transferred_input"] = None
+
+def load_internal_transfer_input(db_manager, internal_transfer_id):
+    row = db_manager.internal_transfers.get_db_row(internal_transfer_id)
+    st.session_state["transaction_or_transfer_toggle"] = "internal_transfer"
+    st.session_state["editing_transaction_id"] = internal_transfer_id
+    st.session_state["target_money_store_input"] = noneify(row["target_store"])
+    st.session_state["source_money_store_input"] = noneify(row["source_store"])
+    st.session_state["transfer_date_input"] = utils.string_to_date(noneify(row["date"]))
+    st.session_state["transfer_time_input"] = utils.string_to_time(noneify(row["time"]))
+    st.session_state["internal_money_transferred_input"] = noneify(row["money_transferred"])
 
 def get_transactions_info_years_months_days(db_manager, state) -> dict[str, dict]:
     transactions_df = get_transaction_and_transfer_df(db_manager)
