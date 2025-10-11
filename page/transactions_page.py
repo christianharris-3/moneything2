@@ -6,6 +6,7 @@ from src.logger import log
 import src.utils as utils
 
 
+
 def transactions_page_ui():
     utils.block_if_no_auth()
     st.set_page_config(page_title="Transactions - Money Thing", page_icon="📈", layout="wide")
@@ -23,16 +24,21 @@ def transactions_page_ui():
     with upload_tab:
         st.markdown("## Upload")
 
-        money_store = st.radio("Money Store", options=db_manager.get_all_money_stores())
+        upload_type = st.multiselect("File Type", ["HSBC Bank Statement", "Lidl Digital Receipt"])
 
-        files = st.file_uploader("Upload HSBC Statements", accept_multiple_files=True)
+        if upload_type == "HSBC Bank Statement":
+            money_store = st.radio("Money Store", options=db_manager.get_all_money_stores())
 
-        if st.button("Store data to database"):
-            progress_bar = st.progress(1, text="Uploading Files")
-            for i,file in enumerate(files):
-                upload_pdf(file, db_manager, money_store)
-                progress_bar.progress((i+1)/len(files))
-            st.markdown("Upload Complete!")
+            files = st.file_uploader("Upload HSBC Statements", accept_multiple_files=True)
+
+            if st.button("Store data to database"):
+                progress_bar = st.progress(1, text="Uploading Files")
+                for i,file in enumerate(files):
+                    upload_pdf(file, db_manager, money_store)
+                    progress_bar.progress((i+1)/len(files))
+                st.markdown("Upload Complete!")
+        else:
+            money_store = st.radio("Money Store", options=db_manager.get_all_money_stores())
 
     # utils.double_run()
 
