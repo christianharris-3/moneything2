@@ -79,7 +79,7 @@ class AddingTransaction:
             else:
                 self.money_store_id = filtered_money_stores.iloc[0]["money_store_id"]
 
-    def add_product(self, product_string):
+    def add_product(self, product_string, override_price=None):
         product_id = self.db_manager.products.get_product_id_from_product_string(product_string)
         if product_id is None:
             self.spending_df.loc[len(self.spending_df)] = {
@@ -87,7 +87,7 @@ class AddingTransaction:
                 "parent_product_id": math.nan,
                 "spending_item_id": math.nan,
                 "new_item_name": product_string,
-                "override_price": None,
+                "override_price": override_price,
                 "num_purchased": 1
             }
         else:
@@ -96,7 +96,7 @@ class AddingTransaction:
                 "parent_product_id": product_id,
                 "spending_item_id": math.nan,
                 "new_item_name": None,
-                "override_price": None,
+                "override_price": override_price,
                 "num_purchased": 1
             }
         st.session_state["adding_spending_df"] = self.spending_df
@@ -310,3 +310,5 @@ class AddingTransaction:
                     "spending_item_id",
                     row["spending_item_id"]
                 )
+
+        return transaction_id

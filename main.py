@@ -93,6 +93,8 @@ if __name__ == "__main__":
 #  improve edit money store menu
 #  re-add merging transactions
 #  make internal transfers editable in transactions menu
+#  make 1 the default for num_purchased
+#  add price box next to add item box
 
 # TODO: MIDDLE PRIORITY
 #  make default location/category auto set based on a transaction

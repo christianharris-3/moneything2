@@ -1,7 +1,7 @@
 import pdfplumber
 import pandas as pd
 import numpy as np
-
+import streamlit as st
 import src.utils as utils
 from src.db_manager import DatabaseManager
 from src.adding_transaction import AddingTransaction
@@ -160,6 +160,10 @@ def store_transactions_df(transactions_df, snapshot_info, db_manager=None, money
         )
 
 def upload_pdf(file, db_manager, money_store=None):
+    if not str(file).endswith(".pdf"):
+        st.markdown("Upload must be PDF")
+        return
+
     statement_pages = extract_pdf_text(file)
     transactions_df, initial_balance = extract_hsbc_statement(statement_pages)
 

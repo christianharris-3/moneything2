@@ -188,20 +188,31 @@ def transactions_edit_ui(db_manager):
         if "product_selection_input" not in st.session_state:
             st.session_state["product_selection_input"] = None
 
-        selected_product = st.selectbox(
+        item, price = st.columns([1, 1])
+
+        selected_product = item.selectbox(
             "Add Item",
             options=db_manager.get_all_products(adding_spending.vendor_name),
             accept_new_options=True, index=None, key="product_selection_input"
         )
 
-        def add_item_button_press(adding_spending_obj, selected_option):
-            adding_spending_obj.add_product(selected_option)
+        override_price = price.number_input(
+            "Item Price",
+            min_value=0.0,
+            step=0.01,
+            key="item_price_input"
+        )
+
+        def add_item_button_press(adding_spending_obj, selected_option, override_price):
+            adding_spending_obj.add_product(selected_option, override_price)
             adding_spending_obj.refresh_display_df()
             del st.session_state["product_selection_input"]
+            del st.session_state["item_price_input"]
 
         st.button(
             "Add Item",
-            on_click=lambda: add_item_button_press(adding_spending, selected_product),
+            on_click=add_item_button_press,
+            args=(adding_spending, selected_product, override_price),
             use_container_width=True
         )
 
@@ -565,7 +576,7 @@ def get_transactions_info_years_months_days(db_manager, state) -> dict[str, dict
     transactions_df = transactions_df[transactions_df["date_obj"].apply(type_info["filter_func"])]
 
     transactions_df["date_id"] = transactions_df["date_obj"].apply(
-        type_info["date_id_func"]
+        lambda obj: (datetime.date.today() if obj is None else type_info["date_id_func"](obj))
     )
     output = {}
     for date_id in transactions_df["date_id"].unique():
