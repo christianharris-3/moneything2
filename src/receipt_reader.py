@@ -2,13 +2,16 @@ from PIL import Image
 import pytesseract
 import re
 import sys
+from src.logger import log
 import pandas as pd
 import src.utils as utils
 from src.adding_transaction import AddingTransaction
 
 def init_pytesseract():
     if sys.platform == "win32":
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        log(f"Set Python to pytesseract to: {path}")
+        pytesseract.pytesseract.tesseract_cmd = path
 
 
 def extract_from_lidl_receipt(image_text):
