@@ -54,8 +54,8 @@ def upload_lidl_receipt(image_path, db_manager, money_store):
     adding_receipt.set_money_store_used(money_store)
 
     row = db_manager.vendors.get_filtered_df("name", vendor).iloc[0]
-    category = db_manager.categories.get_db_row(row["default_category_id"])["name"]
-    location = db_manager.shop_locations.get_db_row(row["default_location_id"])["shop_location"]
+    category = db_manager.categories.get_db_row(row["default_category_id"]).get("name", None)
+    location = db_manager.shop_locations.get_db_row(row["default_location_id"]).get("shop_location", None)
 
     adding_receipt.set_spending_category(category)
     adding_receipt.set_shop_location(location)
