@@ -1,16 +1,15 @@
 from PIL import Image
 import pytesseract
 import re
+import sys
 import pandas as pd
 import src.utils as utils
 from src.adding_transaction import AddingTransaction
 
 def init_pytesseract():
-    try:
+    if sys.platform == "win32":
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    except:
-        # will error if file is not found
-        pass
+
 
 def extract_from_lidl_receipt(image_text):
     text = image_text.split("£\n", 1)[1]
