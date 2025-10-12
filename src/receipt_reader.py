@@ -6,7 +6,11 @@ import src.utils as utils
 from src.adding_transaction import AddingTransaction
 
 def init_pytesseract():
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    try:
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    except:
+        # will error if file is not found
+        pass
 
 def extract_from_lidl_receipt(image_text):
     text = image_text.split("£\n", 1)[1]
