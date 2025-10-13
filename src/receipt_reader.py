@@ -18,8 +18,30 @@ def extract_from_lidl_receipt(image_text):
     text = image_text.split("£\n", 1)[1]
     text = text.split("*CUSTOMER COPY*", 1)[0]
 
-    purchase_items = re.compile(r"([A-Za-z0-9&\s]+)\s+(\d+\.\d{2})\s+([A-Z])")
-    items = purchase_items.findall(text)
+
+    items = []
+    total = 0
+    for text_row in text.split("\n"):
+        text_row = text_row.removesuffix(" A")
+        text_row = text_row.removesuffix(" B")
+        if text_row != "":
+            name, price_str = text_row.rsplit(" ", 1)
+            try:
+                price = float(price_str)
+            except:
+                price = 0
+
+            if price<0:
+                items[-1][1] += price
+            else:
+                if name == "TOTAL":
+                    total = price
+                    break
+                items.append([name.strip(), price])
+
+    df = pd.DataFrame(items, columns=["Item", "Price"])
+    log("Loaded dataframe from uploaded receipt image: ")
+    log(df)
 
     date_time_match = re.findall(r"Date:\s\d+/\d+/\d+\sTime:\s\d+:\d+:\d+", image_text)
 
@@ -31,17 +53,16 @@ def extract_from_lidl_receipt(image_text):
         date = None
         time = None
 
-    df = pd.DataFrame(items, columns=["Item", "Price", "VAT"])[["Item", "Price"]]
-    df["Item"] = df["Item"].str.strip()
+    log(f"Total Price - £{total:.2f}")
+    log(f"Date - {utils.date_to_string(date)}")
+    log(f"Time - {utils.time_to_string(time)}")
 
-    last_row = df.iloc[-1]
-    df = df.iloc[:-1]
-
-    return df, last_row["Price"], date, time
+    return df, total, date, time
 
 
 
 def upload_lidl_receipt(image_path, db_manager, money_store):
+    log(f"Uploading Receipt: {image_path} Into Money Store: {money_store}")
     init_pytesseract()
     img = Image.open(image_path)
     text = pytesseract.image_to_string(img)
