@@ -15,21 +15,26 @@ def init_pytesseract():
 
 
 def extract_from_lidl_receipt(image_text):
-    text = image_text.split("£\n", 1)[1]
+    text = image_text.split("£100 of Lidl Vouchers.", 1)[1]
     text = text.split("*CUSTOMER COPY*", 1)[0]
-
-
+    log("Processing Receipt Text As ->")
+    log(image_text)
+    log("------------------------------")
     items = []
     total = 0
     for text_row in text.split("\n"):
+        log(f"load receipt item row: {text_row}")
         text_row = text_row.removesuffix(" A")
         text_row = text_row.removesuffix(" B")
         if text_row != "":
-            name, price_str = text_row.rsplit(" ", 1)
+            split = text_row.rsplit(" ", 1)
+            if len(split)!=2:
+                continue
+            name, price_str = split
             try:
                 price = float(price_str)
             except:
-                price = 0
+                continue
 
             if price<0:
                 items[-1][1] += price

@@ -7,7 +7,7 @@ import os
 def setup_log():
     if "logger_obj" not in st.session_state:
         st.session_state["logger_obj"] = logging.getLogger(__name__)
-        now = datetime.datetime.now().strftime("%Y.%m.%d-%I.%M.%S%p")
+        now = datetime.datetime.now().strftime("%Y.%m.%d-%H.%M.%S")
         path = f"logs/{now}"
         num = 1
 
