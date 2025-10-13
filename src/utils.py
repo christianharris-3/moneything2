@@ -161,13 +161,20 @@ def string_to_time(input_string: str) -> datetime.time | None:
     string = input_string.lower()
     split = split_to_numbers(string)
 
-    if len(split)<2:
+    if len(split)<1:
         return None
 
     hours = int(split[0])
-    minutes = int(split[1])
+    if len(split) > 1:
+        minutes = int(split[1])
+    else:
+        minutes = 0
+        
     if "pm" in string:
-        hours = (hours+12)%24
+        if hours != 12:
+            hours = (hours+12)%24
+    elif "am" in string:
+        if hours == 12: hours = 0
     return datetime.time(hour=hours, minute=minutes%60)
 
 def time_to_string(time: datetime.time) -> None | str:
