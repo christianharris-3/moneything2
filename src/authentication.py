@@ -3,6 +3,7 @@ from src.sql_database import SQLDatabase
 from src.logger import log
 import pandas as pd
 import bcrypt
+from src.backup_maker import make_backup
 
 def st_auth_ui():
     users_df = load_users()
@@ -33,6 +34,8 @@ def logged_in_ui(users_df):
     if st.button("Change Username", width="stretch"):
         used_usernames = list(users_df["username"])
         change_username_ui(user_row, used_usernames)
+    if st.button("Backup Database", width="stretch"):
+        make_backup()
 
 @st.dialog("Change Password")
 def change_password_ui(user_row):
