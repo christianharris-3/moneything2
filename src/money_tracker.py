@@ -83,7 +83,7 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
 
     change_data.sort(
         key=lambda x:
-        datetime.datetime.today()
+        datetime.date.today()
         if utils.isNone(x["timestamp"])
         else x["timestamp"]
     )

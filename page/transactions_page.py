@@ -58,7 +58,7 @@ def transactions_page_ui():
 
             money_store = st.radio("Money Store Used", options=db_manager.get_all_money_stores())
 
-            files = st.file_uploader("Upload Lidl Receipts", accept_multiple_files=True, key="lidl_receipt_input")
+            files = st.file_uploader("Upload Lidl Receipts", accept_multiple_files=True)
 
             if st.button("Store data to database"):
                 if len(files)>=2:
