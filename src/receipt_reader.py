@@ -5,6 +5,7 @@ import sys
 from src.logger import log
 import pandas as pd
 import src.utils as utils
+import streamlit as st
 from src.adding_transaction import AddingTransaction
 
 def init_pytesseract():
@@ -74,6 +75,7 @@ def upload_lidl_receipt(image_path, db_manager, money_store):
 
     vendor = "Lidl"
 
+    del st.session_state["adding_spending_df"]
     adding_receipt = AddingTransaction(db_manager)
     adding_receipt.set_vendor_name("Lidl")
     adding_receipt.set_is_income(False)

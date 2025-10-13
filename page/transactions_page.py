@@ -58,10 +58,10 @@ def transactions_page_ui():
 
             money_store = st.radio("Money Store Used", options=db_manager.get_all_money_stores())
 
-            files = st.file_uploader("Upload Lidl Receipts", accept_multiple_files=True)
+            files = st.file_uploader("Upload Lidl Receipts", accept_multiple_files=True, key="lidl_receipt_input")
 
             if st.button("Store data to database"):
-                if len(files)>=5:
+                if len(files)>=2:
                     progress_bar = st.progress(1, text="Uploading Receipts")
 
                 st.session_state["view_new_uploaded_transactions"] = []
@@ -70,9 +70,11 @@ def transactions_page_ui():
                     print("loading file", file)
                     transaction_id = upload_lidl_receipt(file, db_manager, money_store)
                     st.session_state["view_new_uploaded_transactions"].append(transaction_id)
-                    if len(files) >= 5:
+                    if len(files) >= 2:
                         progress_bar.progress((i + 1) / len(files))
                 st.toast("Upload Complete!", icon="✔️")
+                del st.session_state["lidl_receipt_input"]
+
 
             new_transactions = st.session_state.get("view_new_uploaded_transactions", [])
             if len(new_transactions) > 0:
