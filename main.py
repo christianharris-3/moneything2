@@ -7,6 +7,9 @@ from page.vendors_page import edit_vendors_page_ui
 from page.categories_page import categories_page_ui
 from page.money_stores_page import money_stores_page_ui
 from page.database_view_page import database_view_page_ui
+import pandas as pd
+
+pd.set_option('display.max_rows', 50, 'display.max_columns', 10, 'display.expand_frame_repr', False)
 
 st.set_page_config(
     page_title="Home - Money Thing",
@@ -89,6 +92,7 @@ if __name__ == "__main__":
     pg.run()
 
 # TODO: HIGH PRIORITY
+#  add products page
 #  add vendor merging back to vendor menu
 #  improve edit money store menu
 #  re-add merging transactions

@@ -169,7 +169,8 @@ class DatabaseTable:
         renamed_df = display_df.rename(
             self.INVERSE_DISPLAY_DF_RENAMED,
             axis=1
-        )
+        ).reset_index(drop=True)
+
         for inner_join in self.display_inner_joins:
             merged_df = renamed_df.merge(
                 inner_join["object"].db_data.drop_duplicates(
