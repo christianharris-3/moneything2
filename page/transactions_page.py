@@ -73,7 +73,6 @@ def transactions_page_ui():
                     if len(files) >= 2:
                         progress_bar.progress((i + 1) / len(files))
                 st.toast("Upload Complete!", icon="✔️")
-                del st.session_state["lidl_receipt_input"]
 
 
             new_transactions = st.session_state.get("view_new_uploaded_transactions", [])

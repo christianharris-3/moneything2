@@ -573,7 +573,12 @@ def get_transactions_info_years_months_days(db_manager, state) -> dict[str, dict
 
     transactions_df["date_obj"] = transactions_df["date"].apply(utils.string_to_date)
 
-    transactions_df = transactions_df[transactions_df["date_obj"].apply(type_info["filter_func"])]
+    transactions_df = transactions_df[transactions_df["date_obj"].apply(
+        lambda val:
+        datetime.datetime.today()
+        if utils.isNone(val)
+        else type_info["filter_func"](val)
+    )]
 
     transactions_df["date_id"] = transactions_df["date_obj"].apply(
         lambda obj: (datetime.date.today() if obj is None else type_info["date_id_func"](obj))

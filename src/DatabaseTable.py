@@ -1,5 +1,6 @@
 import pandas as pd
 import src.utils as utils
+from src.logger import log
 
 class DatabaseTable:
     TABLE = "TABLE_NOT_ADDED"
@@ -58,14 +59,18 @@ class DatabaseTable:
         return table_edited
 
     def save_row_remove(self, id_, db):
+        removed_rows = self.db_data[self.db_data[self.COLUMNS[0]] == id_]
+        if len(removed_rows) > 0:
+            log(f"Deleting row from {self.TABLE}: {dict(removed_rows.iloc[0])}")
         self.db_data = self.db_data.drop(
-            self.db_data[self.db_data[self.COLUMNS[0]] == id_].index[0]
+            removed_rows.index[0]
         )
         db.delete(self.TABLE, self.COLUMNS[0], id_)
 
     def save_row_added(self, updated_row, db):
         row_data = dict(updated_row)
         row_data.pop(self.COLUMNS[0], None)
+        log(f"Storing data to {self.TABLE}: {row_data}")
         db.create_row(
             self.TABLE,
             row_data
@@ -89,6 +94,7 @@ class DatabaseTable:
 
     def save_row_changes(self, original_row, updated_row, db) -> bool:
         if not DatabaseTable.row_equals(original_row, updated_row):
+            log(f"Updating Row on {self.TABLE} = {dict(original_row)} -> {dict(updated_row)}")
             db.update_row(
                 self.TABLE,
                 utils.get_row_differences(original_row, updated_row),

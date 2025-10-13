@@ -81,7 +81,12 @@ def get_graph_info(db_manager, money_store) -> tuple[list[datetime], list[float]
         "value": 0
     }
 
-    change_data.sort(key=lambda x: x["timestamp"])
+    change_data.sort(
+        key=lambda x:
+        datetime.datetime.today()
+        if utils.isNone(x["timestamp"])
+        else x["timestamp"]
+    )
     if change_data[0]["timestamp"]<creation["timestamp"]:
         creation["timestamp"] = change_data[0]["timestamp"] - datetime.timedelta(days=1)
 
